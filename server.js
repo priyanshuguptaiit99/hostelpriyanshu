@@ -11,7 +11,7 @@ const app = express();
 // Middleware
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://your-app-name.onrender.com', 'https://your-app-name.render.com'] 
+    ? ['https://hostel-management-system-hqg0.onrender.com', 'https://hostel-management-system-hqg0.onrender.com'] 
     : true,
   credentials: true
 }));
