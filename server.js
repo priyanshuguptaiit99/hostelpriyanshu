@@ -26,9 +26,12 @@ app.use(cors({
     : true,
   credentials: true
 }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static('public'));
+
+// Serve static files (IMPORTANT for google-callback.html)
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Session middleware (for Google OAuth)
 app.use(session({
@@ -80,8 +83,13 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Serve frontend for all other routes
-app.get('*', (req, res) => {
+// SPA fallback route (FIXED)
+app.get('*', (req, res, next) => {
+  // Allow direct access to files like .html, .css, .js, images, etc.
+  if (req.path.includes('.')) {
+    return next();
+  }
+
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
