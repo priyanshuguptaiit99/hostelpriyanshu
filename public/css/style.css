@@ -61,7 +61,7 @@
 }
 
 [data-theme="dark"] body {
-    background: radial-gradient(circle at top left, #1f2937 0, #020617 55%, #000 100%);
+    background: radial-gradient(circle at top, #0f172a 0%, #020617 60%, #000 100%);
     color: var(--text-primary);
     background-attachment: fixed;
 }
@@ -1945,12 +1945,13 @@ textarea:focus-visible {
     outline-offset: 2px;
 }
 
-/* ==================== DARK MODE SUPPORT ==================== */
+/* ==================== FINAL DARK MODE FIX ==================== */
 [data-theme="dark"] body {
-    background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+    background: radial-gradient(circle at top, #0f172a 0%, #020617 60%, #000 100%);
+    color: var(--text-primary);
+    background-attachment: fixed;
 }
 
-[data-theme="dark"] .auth-container,
 [data-theme="dark"] .navbar,
 [data-theme="dark"] .sidebar,
 [data-theme="dark"] .card,
@@ -1958,28 +1959,22 @@ textarea:focus-visible {
 [data-theme="dark"] .modal-content,
 [data-theme="dark"] table,
 [data-theme="dark"] .quick-action-card,
-[data-theme="dark"] .timeline-content {
-    background: var(--dark-light);
+[data-theme="dark"] .timeline-content,
+[data-theme="dark"] .auth-container {
+    background: rgba(15, 23, 42, 0.95);
     color: var(--text-primary);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(16px);
 }
 
-[data-theme="dark"] .auth-form input,
-[data-theme="dark"] .form-group input,
-[data-theme="dark"] .form-group select,
-[data-theme="dark"] .form-group textarea,
-[data-theme="dark"] .search-bar input {
-    background: var(--light-gray);
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+    background: rgba(15, 23, 42, 0.9);
     color: var(--text-primary);
-    border-color: var(--border);
+    border: 1px solid var(--border);
 }
 
-[data-theme="dark"] table th {
-    background: var(--light-gray);
-}
-
-[data-theme="dark"] table tbody tr:hover {
-    background: rgba(79, 70, 229, 0.1);
-}
 
 /* ==================== CUSTOM ANIMATIONS ==================== */
 .fade-in {
