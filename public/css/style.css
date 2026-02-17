@@ -1020,6 +1020,30 @@ table tbody tr:last-child td {
     border-bottom: none;
 }
 
+/* Dark theme refinements for tables (placed after base styles for proper override) */
+[data-theme="dark"] .table-container {
+    box-shadow: var(--shadow-md);
+    border-color: var(--border);
+}
+
+[data-theme="dark"] table {
+    background: rgba(15, 23, 42, 0.98);
+}
+
+[data-theme="dark"] table th {
+    background: rgba(15, 23, 42, 1);
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] table td {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] table tbody tr:hover {
+    background: rgba(15, 23, 42, 0.94);
+    transform: translateY(-2px);
+}
+
 /* ==================== BUTTONS ==================== */
 .btn {
     padding: 14px 28px;
@@ -1149,6 +1173,21 @@ table tbody tr:last-child td {
     font-size: 13px;
 }
 
+/* Dark theme refinement for grouped form controls */
+[data-theme="dark"] .form-group input,
+[data-theme="dark"] .form-group select,
+[data-theme="dark"] .form-group textarea {
+    background: rgba(15, 23, 42, 0.98);
+    border-color: var(--border);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .form-group input:focus,
+[data-theme="dark"] .form-group select:focus,
+[data-theme="dark"] .form-group textarea:focus {
+    box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.6), 0 0 0 6px rgba(129, 140, 248, 0.22);
+}
+
 /* ==================== BADGES ==================== */
 .badge {
     padding: 6px 14px;
@@ -1188,6 +1227,38 @@ table tbody tr:last-child td {
 .badge-secondary {
     background: #e2e8f0;
     color: #475569;
+}
+
+/* Dark theme refinements for badges (override light backgrounds) */
+[data-theme="dark"] .badge-success {
+    background: rgba(22, 163, 74, 0.18);
+    color: #bbf7d0;
+}
+
+[data-theme="dark"] .badge-warning {
+    background: rgba(245, 158, 11, 0.18);
+    color: #facc15;
+}
+
+[data-theme="dark"] .badge-danger {
+    background: rgba(239, 68, 68, 0.22);
+    color: #fecaca;
+}
+
+[data-theme="dark"] .badge-info {
+    background: rgba(59, 130, 246, 0.2);
+    color: #bfdbfe;
+}
+
+[data-theme="dark"] .badge-primary {
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    color: #eff6ff;
+}
+
+[data-theme="dark"] .badge-secondary {
+    background: rgba(15, 23, 42, 0.98);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
 }
 
 /* ==================== ALERTS ==================== */
@@ -1235,6 +1306,27 @@ table tbody tr:last-child td {
 .alert-error::before { content: '❌'; }
 .alert-info::before { content: 'ℹ️'; }
 .alert-warning::before { content: '⚠️'; }
+
+/* Dark theme refinements for alerts (better contrast on dark backgrounds) */
+[data-theme="dark"] .alert-success {
+    background: rgba(22, 163, 74, 0.14);
+    color: #bbf7d0;
+}
+
+[data-theme="dark"] .alert-error {
+    background: rgba(239, 68, 68, 0.16);
+    color: #fecaca;
+}
+
+[data-theme="dark"] .alert-info {
+    background: rgba(59, 130, 246, 0.18);
+    color: #bfdbfe;
+}
+
+[data-theme="dark"] .alert-warning {
+    background: rgba(245, 158, 11, 0.16);
+    color: #facc15;
+}
 
 /* ==================== MODAL ==================== */
 .modal {
