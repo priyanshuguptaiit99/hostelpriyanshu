@@ -86,15 +86,22 @@ app.get('/api/health', (req, res) => {
 });
 
 // =======================
-// SPA FALLBACK (FIXED)
+// SPA FALLBACK
 // =======================
 
-app.get('*', (req, res, next) => {
-  // If requesting a file like .html, .css, .js
-  if (req.path.includes('.')) {
-    return next();
-  }
+// Serve google-callback.html explicitly
+app.get('/google-callback.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'google-callback.html'));
+});
 
+// Catch-all for SPA (only for non-file requests)
+app.get('*', (req, res) => {
+  // If requesting a static file, let express.static handle it
+  if (req.path.match(/\.(html|css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/)) {
+    return res.status(404).send('File not found');
+  }
+  
+  // Otherwise serve index.html for SPA routing
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
