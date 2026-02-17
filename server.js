@@ -3,8 +3,6 @@
  * 
  * @author Priyanshu
  * @version 2.2
- * @copyright 2026 Priyanshu. All Rights Reserved.
- * @description A complete web-based hostel management application
  */
 
 const express = require('express');
@@ -19,9 +17,12 @@ dotenv.config();
 
 const app = express();
 
-// Middleware
+// =======================
+// MIDDLEWARE
+// =======================
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
+  origin: process.env.NODE_ENV === 'production'
     ? process.env.ALLOWED_ORIGINS?.split(',') || true
     : true,
   credentials: true
@@ -30,41 +31,46 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files (IMPORTANT for google-callback.html)
+// Serve static files (IMPORTANT)
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Session middleware (for Google OAuth)
+// =======================
+// SESSION (Google OAuth)
+// =======================
+
 app.use(session({
-  secret: process.env.JWT_SECRET || 'your-secret-key-change-in-production',
+  secret: process.env.JWT_SECRET || 'change-this-secret',
   resave: false,
   saveUninitialized: false,
   cookie: {
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    maxAge: 24 * 60 * 60 * 1000
   }
 }));
 
-// Passport middleware
+// Passport
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Passport config (only if file exists)
 try {
   require('./config/passport')(passport);
   console.log('✅ Passport configured');
-} catch (error) {
-  console.log('⚠️  Passport config not found - Google OAuth disabled');
+} catch (err) {
+  console.log('⚠️ Passport config not found');
 }
 
-// Database connection
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-  .then(() => console.log('✅ MongoDB connected successfully'))
-  .catch(err => console.error('❌ MongoDB connection error:', err));
+// =======================
+// DATABASE
+// =======================
 
-// API Routes
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log('✅ MongoDB connected'))
+  .catch(err => console.error('❌ MongoDB error:', err));
+
+// =======================
+// API ROUTES
+// =======================
+
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/attendance', require('./routes/attendance'));
 app.use('/api/attendance-approval', require('./routes/attendanceApproval'));
@@ -74,18 +80,17 @@ app.use('/api/complaints', require('./routes/complaints'));
 app.use('/api/announcements', require('./routes/announcements'));
 app.use('/api/warden-requests', require('./routes/wardenRequests'));
 
-// Health check endpoint
+// Health check
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    success: true, 
-    message: 'Server is running',
-    timestamp: new Date().toISOString()
-  });
+  res.json({ success: true, message: 'Server running' });
 });
 
-// SPA fallback route (FIXED)
+// =======================
+// SPA FALLBACK (FIXED)
+// =======================
+
 app.get('*', (req, res, next) => {
-  // Allow direct access to files like .html, .css, .js, images, etc.
+  // If requesting a file like .html, .css, .js
   if (req.path.includes('.')) {
     return next();
   }
@@ -93,34 +98,24 @@ app.get('*', (req, res, next) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Error handling middleware
+// =======================
+// ERROR HANDLER
+// =======================
+
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  res.status(err.status || 500).json({
+  console.error(err);
+  res.status(500).json({
     success: false,
-    message: err.message || 'Internal server error',
-    error: process.env.NODE_ENV === 'development' ? err : {}
+    message: 'Internal server error'
   });
 });
 
+// =======================
+// START SERVER
+// =======================
+
 const PORT = process.env.PORT || 5000;
-
-// Handle graceful shutdown
-process.on('SIGTERM', async () => {
-  console.log('SIGTERM received, shutting down gracefully');
-  await mongoose.connection.close();
-  process.exit(0);
-});
-
-process.on('SIGINT', async () => {
-  console.log('SIGINT received, shutting down gracefully');
-  await mongoose.connection.close();
-  process.exit(0);
-});
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📱 Frontend: http://localhost:${PORT}`);
-  console.log(`🔌 API: http://localhost:${PORT}/api`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
