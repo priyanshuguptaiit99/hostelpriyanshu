@@ -912,8 +912,52 @@ async function reviewWardenRequest(requestId, action) {
 }
 
 async function viewWardenRequestDetails(requestId) {
-    // Implementation for viewing request details
-    showAlert('View details feature coming soon', 'info');
+    try {
+        const result = await apiCall(`/warden-requests/${requestId}`);
+        const request = result.request;
+        
+        const modalHtml = `
+            <div class="modal active" id="requestDetailsModal" onclick="if(event.target === this) closeModal('requestDetailsModal')">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Warden Request Details</h3>
+                        <button class="modal-close" onclick="closeModal('requestDetailsModal')">&times;</button>
+                    </div>
+                    <div>
+                        <div style="margin-bottom: 20px;">
+                            <p><strong>Name:</strong> ${request.name}</p>
+                            <p><strong>Email:</strong> ${request.email}</p>
+                            <p><strong>College ID:</strong> ${request.collegeId}</p>
+                            <p><strong>Phone:</strong> ${request.phoneNumber || 'N/A'}</p>
+                            <p><strong>Department:</strong> ${request.department || 'N/A'}</p>
+                            <p><strong>Room:</strong> ${request.roomNumber || 'N/A'}</p>
+                        </div>
+                        
+                        <hr style="margin: 20px 0;">
+                        
+                        <div style="margin-bottom: 20px;">
+                            <p><strong>Status:</strong> <span class="badge badge-${request.status === 'approved' ? 'success' : request.status === 'rejected' ? 'danger' : 'warning'}">${request.status}</span></p>
+                            <p><strong>Requested On:</strong> ${formatDateTime(request.requestedAt)}</p>
+                            ${request.reviewedBy ? `
+                                <p><strong>Reviewed By:</strong> ${request.reviewedBy.name}</p>
+                                <p><strong>Reviewed On:</strong> ${formatDateTime(request.reviewedAt)}</p>
+                            ` : ''}
+                        </div>
+                        
+                        ${request.reviewNotes ? `
+                            <hr style="margin: 20px 0;">
+                            <p><strong>Review Notes:</strong></p>
+                            <p style="padding: 16px; background: var(--light); border-radius: 8px;">${request.reviewNotes}</p>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    } catch (error) {
+        showAlert(error.message, 'error');
+    }
 }
 
 // Make functions globally accessible
@@ -1208,3 +1252,65 @@ async function renderComplaints() {
         showAlert(error.message, 'error');
     }
 }
+
+
+// ==================== MISSING FUNCTIONS ====================
+
+async function showGenerateBillsModal() {
+    const today = new Date();
+    const html = `
+        <div class="page-header">
+            <h2>💰 Generate Mess Bills</h2>
+            <p>Generate bills for all students</p>
+        </div>
+        
+        <div class="card">
+            <h3>Bulk Bill Generation</h3>
+            <form onsubmit="generateAllBills(event)">
+                <div class="form-group">
+                    <label>Month</label>
+                    <select id="bill-month" required>
+                        ${Array.from({length: 12}, (_, i) => `
+                            <option value="${i + 1}" ${i + 1 === today.getMonth() + 1 ? 'selected' : ''}>
+                                ${getMonthName(i + 1)}
+                            </option>
+                        `).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Year</label>
+                    <input type="number" id="bill-year" required value="${today.getFullYear()}">
+                </div>
+                <div class="alert alert-info">
+                    <p>This will generate bills for all students based on their attendance records.</p>
+                    <p>Bills will be calculated as: Total Days × Daily Rate</p>
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="btn">Generate All Bills</button>
+                    <button type="button" class="btn btn-secondary" onclick="renderMessBills()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    `;
+    
+    document.getElementById('content-area').innerHTML = html;
+}
+
+async function markBillPaid(billId) {
+    if (!confirm('Mark this bill as paid?')) return;
+    
+    try {
+        showLoading();
+        await apiCall(`/mess-bill/${billId}/pay`, 'PUT', { paymentStatus: 'paid' });
+        hideLoading();
+        showAlert('Bill marked as paid successfully!', 'success');
+        renderMessBills();
+    } catch (error) {
+        hideLoading();
+        showAlert(error.message, 'error');
+    }
+}
+
+// Expose new functions globally
+window.showGenerateBillsModal = showGenerateBillsModal;
+window.markBillPaid = markBillPaid;
