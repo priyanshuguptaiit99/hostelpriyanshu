@@ -288,7 +288,13 @@ async function apiCall(endpoint, method = 'GET', data = null) {
                 showAuth();
                 throw new Error('Session expired. Please login again.');
             }
-            throw new Error(result.message || 'Something went wrong');
+            
+            // Create error with additional properties
+            const error = new Error(result.message || 'Something went wrong');
+            error.requiresVerification = result.requiresVerification;
+            error.email = result.email;
+            error.statusCode = response.status;
+            throw error;
         }
         
         return result;

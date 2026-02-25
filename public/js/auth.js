@@ -100,13 +100,42 @@ async function handleLogin(event) {
         console.error('Login error:', error); // Debug log
         
         // Check if email verification is required
-        if (error.requiresVerification) {
-            alert('📧 Please verify your email before logging in. Check your college email for the OTP.');
+        if (error.requiresVerification || (error.message && error.message.includes('verify your email'))) {
+            const emailToVerify = error.email || email;
+            alert('📧 Please verify your email before logging in. We will send you an OTP now.');
             window.showAlert('Email verification required', 'warning');
-            setTimeout(() => {
-                showEmailVerification(error.email || email);
-                isLoggingIn = false;
-            }, 500);
+            
+            // Automatically send OTP
+            try {
+                const otpResult = await window.apiCall('/auth/send-verification-otp', 'POST', { email: emailToVerify });
+                
+                setTimeout(() => {
+                    showEmailVerification(emailToVerify);
+                    
+                    // Show OTP in development mode
+                    if (otpResult.otp) {
+                        setTimeout(() => {
+                            const otpDisplay = document.getElementById('otp-display');
+                            const devOtp = document.getElementById('dev-otp');
+                            if (otpDisplay && devOtp) {
+                                devOtp.textContent = otpResult.otp;
+                                otpDisplay.style.display = 'block';
+                            }
+                        }, 200);
+                        console.log('=================================');
+                        console.log('DEVELOPMENT MODE - OTP:', otpResult.otp);
+                        console.log('=================================');
+                    }
+                    
+                    isLoggingIn = false;
+                }, 500);
+            } catch (otpError) {
+                console.error('OTP send error:', otpError);
+                setTimeout(() => {
+                    showEmailVerification(emailToVerify);
+                    isLoggingIn = false;
+                }, 500);
+            }
         } else {
             alert('❌ Login failed: ' + error.message);
             window.showAlert(error.message || 'Login failed', 'error');
@@ -303,9 +332,10 @@ async function handleGoogleLogin() {
             if (event.data.type === 'GOOGLE_AUTH_SUCCESS') {
                 popup.close();
                 
+                let authResult;
                 try {
                     // Send code to backend
-                    const authResult = await window.apiCall('/auth/google/callback', 'POST', {
+                    authResult = await window.apiCall('/auth/google/callback', 'POST', {
                         code: event.data.code
                     });
                     
@@ -369,11 +399,44 @@ async function handleGoogleLogin() {
                     if (error.message && error.message.includes('@nitj.ac.in')) {
                         alert('❌ Only NITJ College Email Allowed!\n\nPlease sign in with your college email address ending with @nitj.ac.in');
                         window.showAlert('Only NITJ college email addresses are allowed', 'error');
-                    } else if (error.requiresVerification) {
-                        window.showAlert('Please verify your email', 'warning');
-                        setTimeout(() => {
-                            showEmailVerification(error.email);
-                        }, 500);
+                    } else if (error.requiresVerification || (error.message && error.message.includes('verify your email'))) {
+                        // Email verification required - send OTP automatically
+                        const userEmail = error.email || authResult?.user?.email;
+                        
+                        if (userEmail) {
+                            alert('📧 Please verify your email. We will send you an OTP now.');
+                            window.showAlert('Email verification required', 'warning');
+                            
+                            try {
+                                const otpResult = await window.apiCall('/auth/send-verification-otp', 'POST', { email: userEmail });
+                                
+                                setTimeout(() => {
+                                    showEmailVerification(userEmail);
+                                    
+                                    // Show OTP in development mode
+                                    if (otpResult.otp) {
+                                        setTimeout(() => {
+                                            const otpDisplay = document.getElementById('otp-display');
+                                            const devOtp = document.getElementById('dev-otp');
+                                            if (otpDisplay && devOtp) {
+                                                devOtp.textContent = otpResult.otp;
+                                                otpDisplay.style.display = 'block';
+                                            }
+                                        }, 200);
+                                        console.log('=================================');
+                                        console.log('DEVELOPMENT MODE - OTP:', otpResult.otp);
+                                        console.log('=================================');
+                                    }
+                                }, 500);
+                            } catch (otpError) {
+                                console.error('OTP send error:', otpError);
+                                setTimeout(() => {
+                                    showEmailVerification(userEmail);
+                                }, 500);
+                            }
+                        } else {
+                            window.showAlert('Please login with email/password to verify', 'info');
+                        }
                     } else {
                         alert('❌ Google authentication failed: ' + error.message);
                         window.showAlert(error.message || 'Google authentication failed', 'error');
