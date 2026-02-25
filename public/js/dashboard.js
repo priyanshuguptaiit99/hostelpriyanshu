@@ -5,7 +5,7 @@
  * @copyright 2026 Priyanshu. All Rights Reserved.
  */
 
-function loadDashboard() {
+async function loadDashboard() {
     console.log('loadDashboard called, currentUser:', window.currentUser || currentUser); // Debug log
     
     const user = window.currentUser || currentUser;
@@ -24,7 +24,8 @@ function loadDashboard() {
             { name: '📋 My Attendance', view: 'myAttendance' },
             { name: '💰 My Bills', view: 'myBills' },
             { name: '🔧 My Complaints', view: 'myComplaints' },
-            { name: '📢 Announcements', view: 'announcements' }
+            { name: '📢 Announcements', view: 'announcements' },
+            { name: '🎓 Request Warden Access', view: 'wardenRequest' }
         ],
         warden: [
             { name: '📊 Dashboard', view: 'wardenDashboard' },
@@ -36,16 +37,38 @@ function loadDashboard() {
         ],
         admin: [
             { name: '📊 Admin Dashboard', view: 'adminDashboard' },
-            { name: '👥 Pending Wardens', view: 'pendingWardens' },
+            { name: '👥 Pending Wardens', view: 'pendingWardens', badge: true },
             { name: '👤 All Users', view: 'allUsers' },
             { name: '📢 Announcements', view: 'manageAnnouncements' }
         ]
     };
 
     sidebar.innerHTML = '';
+    
+    // Fetch pending warden count for admin
+    let pendingWardenCount = 0;
+    if (role === 'admin') {
+        try {
+            const wardenStats = await apiCall('/warden-requests');
+            pendingWardenCount = wardenStats.stats.pending || 0;
+        } catch (error) {
+            console.log('Could not fetch warden stats:', error);
+        }
+    }
+    
     menus[role].forEach((menu, index) => {
         const li = document.createElement('li');
         li.textContent = menu.name;
+        
+        // Add badge for pending wardens
+        if (menu.badge && pendingWardenCount > 0) {
+            const badge = document.createElement('span');
+            badge.className = 'notification-badge';
+            badge.textContent = pendingWardenCount;
+            badge.style.cssText = 'background: var(--danger); color: white; border-radius: 50%; padding: 2px 8px; font-size: 12px; margin-left: 8px; font-weight: 700;';
+            li.appendChild(badge);
+        }
+        
         li.onclick = () => {
             document.querySelectorAll('.sidebar li').forEach(item => item.classList.remove('active'));
             li.classList.add('active');
@@ -153,6 +176,13 @@ async function loadView(viewName) {
             case 'announcements':
             case 'manageAnnouncements':
                 renderAnnouncements();
+                break;
+            case 'wardenRequest':
+                if (window.renderWardenRequest) {
+                    await window.renderWardenRequest();
+                } else {
+                    contentArea.innerHTML = '<div class="empty-state"><h3>Warden Request</h3><p>This feature is under development</p></div>';
+                }
                 break;
             default:
                 contentArea.innerHTML = '<div class="empty-state"><h3>Coming Soon</h3><p>This feature is under development</p></div>';
@@ -1167,49 +1197,110 @@ async function renderAdminDashboard() {
 async function renderPendingWardens() {
     try {
         showLoading();
-        // Use warden-requests API instead of approvals
-        const result = await apiCall('/warden-requests?status=pending');
+        // Fetch all warden requests to show stats
+        const allRequestsResult = await apiCall('/warden-requests');
+        const pendingResult = await apiCall('/warden-requests?status=pending');
         
         const html = `
             <div class="page-header">
-                <h2>👥 Pending Warden Requests</h2>
-                <p>Review and approve warden access requests</p>
+                <h2>👥 Warden Access Requests</h2>
+                <p>Review and manage warden access requests from students</p>
+            </div>
+            
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card hover-lift">
+                    <h4>Total Requests</h4>
+                    <div class="stat-value">${allRequestsResult.stats.total}</div>
+                    <div class="stat-label">All time</div>
+                </div>
+                <div class="stat-card hover-lift">
+                    <h4>Pending</h4>
+                    <div class="stat-value" style="color: var(--warning)">${allRequestsResult.stats.pending}</div>
+                    <div class="stat-label">Awaiting review</div>
+                </div>
+                <div class="stat-card hover-lift">
+                    <h4>Approved</h4>
+                    <div class="stat-value" style="color: var(--success)">${allRequestsResult.stats.approved}</div>
+                    <div class="stat-label">Active wardens</div>
+                </div>
+                <div class="stat-card hover-lift">
+                    <h4>Rejected</h4>
+                    <div class="stat-value" style="color: var(--danger)">${allRequestsResult.stats.rejected}</div>
+                    <div class="stat-label">Declined</div>
+                </div>
             </div>
             
             <div class="card">
-                <h3>Warden Requests (${result.requests ? result.requests.length : 0})</h3>
-                ${result.requests && result.requests.length > 0 ? `
+                <div class="flex-between mb-3">
+                    <h3>🚨 Pending Requests (${pendingResult.requests ? pendingResult.requests.length : 0})</h3>
+                    <div class="flex gap-2">
+                        <select onchange="filterRequestsByStatus(this.value)" style="padding: 8px 16px; border-radius: 8px; border: 2px solid var(--border);">
+                            <option value="pending">Pending Only</option>
+                            <option value="all">All Requests</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+                        <button class="btn btn-secondary btn-sm" onclick="loadAllWardenRequests()">View All History</button>
+                    </div>
+                </div>
+                
+                ${pendingResult.requests && pendingResult.requests.length > 0 ? `
                     <div class="table-container">
-                        <table>
+                        <table id="wardenRequestsTable">
                             <thead>
                                 <tr>
-                                    <th>Name</th>
+                                    <th>Student Name</th>
                                     <th>Email</th>
                                     <th>College ID</th>
+                                    <th>Department</th>
                                     <th>Phone</th>
-                                    <th>Requested</th>
+                                    <th>Requested On</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                ${result.requests.map(request => `
-                                    <tr>
+                                ${pendingResult.requests.map(request => `
+                                    <tr data-status="${request.status}">
                                         <td><strong>${request.name}</strong></td>
                                         <td>${request.email}</td>
-                                        <td>${request.collegeId}</td>
+                                        <td><span class="badge badge-info">${request.collegeId}</span></td>
+                                        <td>${request.department || 'N/A'}</td>
                                         <td>${request.phoneNumber || 'N/A'}</td>
                                         <td>${formatDateTime(request.requestedAt)}</td>
                                         <td>
-                                            <button class="btn btn-sm btn-success" onclick="reviewWardenRequest('${request._id}', 'approve')">✅ Approve</button>
-                                            <button class="btn btn-sm btn-danger" onclick="reviewWardenRequest('${request._id}', 'reject')">❌ Reject</button>
+                                            <div class="flex gap-1">
+                                                <button class="btn btn-sm btn-success" onclick="reviewWardenRequest('${request._id}', 'approve')" title="Approve Request">
+                                                    ✅ Approve
+                                                </button>
+                                                <button class="btn btn-sm btn-danger" onclick="reviewWardenRequest('${request._id}', 'reject')" title="Reject Request">
+                                                    ❌ Reject
+                                                </button>
+                                                <button class="btn btn-sm" onclick="viewRequestDetails('${request._id}')" title="View Details">
+                                                    👁️ View
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 `).join('')}
                             </tbody>
                         </table>
                     </div>
-                ` : '<div class="empty-state"><p>No pending warden requests</p></div>'}
+                ` : `
+                    <div class="empty-state">
+                        <div style="font-size: 64px; margin-bottom: 16px;">✅</div>
+                        <h3>No Pending Requests</h3>
+                        <p>All warden requests have been reviewed. Great job!</p>
+                    </div>
+                `}
             </div>
+            
+            ${allRequestsResult.stats.pending > 0 ? `
+                <div class="alert alert-info">
+                    <strong>💡 Quick Tip:</strong> Review pending requests promptly to help students access warden features. 
+                    Approved wardens can manage attendance, bills, and complaints.
+                </div>
+            ` : ''}
         `;
         
         document.getElementById('content-area').innerHTML = html;
@@ -1217,7 +1308,8 @@ async function renderPendingWardens() {
         
     } catch (error) {
         hideLoading();
-        showAlert(error.message, 'error');
+        console.error('Error loading warden requests:', error);
+        showAlert(error.message || 'Failed to load warden requests', 'error');
     }
 }
 
@@ -1411,6 +1503,207 @@ async function renderAllUsers() {
     }
 }
 
+async function filterRequestsByStatus(status) {
+    if (status === 'all') {
+        loadAllWardenRequests();
+    } else if (status === 'pending') {
+        renderPendingWardens();
+    } else {
+        loadAllWardenRequests(status);
+    }
+}
+
+async function loadAllWardenRequests(filterStatus = '') {
+    try {
+        showLoading();
+        const url = filterStatus ? `/warden-requests?status=${filterStatus}` : '/warden-requests';
+        const result = await apiCall(url);
+        
+        const html = `
+            <div class="page-header">
+                <h2>👥 All Warden Requests</h2>
+                <p>Complete history of warden access requests</p>
+            </div>
+            
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card hover-lift">
+                    <h4>Total Requests</h4>
+                    <div class="stat-value">${result.stats.total}</div>
+                </div>
+                <div class="stat-card hover-lift">
+                    <h4>Pending</h4>
+                    <div class="stat-value" style="color: var(--warning)">${result.stats.pending}</div>
+                </div>
+                <div class="stat-card hover-lift">
+                    <h4>Approved</h4>
+                    <div class="stat-value" style="color: var(--success)">${result.stats.approved}</div>
+                </div>
+                <div class="stat-card hover-lift">
+                    <h4>Rejected</h4>
+                    <div class="stat-value" style="color: var(--danger)">${result.stats.rejected}</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="flex-between mb-3">
+                    <h3>All Requests (${result.requests.length})</h3>
+                    <div class="flex gap-2">
+                        <select onchange="filterRequestsByStatus(this.value)" style="padding: 8px 16px; border-radius: 8px; border: 2px solid var(--border);">
+                            <option value="all" ${!filterStatus ? 'selected' : ''}>All Status</option>
+                            <option value="pending" ${filterStatus === 'pending' ? 'selected' : ''}>Pending</option>
+                            <option value="approved" ${filterStatus === 'approved' ? 'selected' : ''}>Approved</option>
+                            <option value="rejected" ${filterStatus === 'rejected' ? 'selected' : ''}>Rejected</option>
+                        </select>
+                        <button class="btn btn-secondary btn-sm" onclick="renderPendingWardens()">Back to Pending</button>
+                    </div>
+                </div>
+                
+                ${result.requests.length > 0 ? `
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Student Name</th>
+                                    <th>Email</th>
+                                    <th>College ID</th>
+                                    <th>Status</th>
+                                    <th>Requested On</th>
+                                    <th>Reviewed By</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${result.requests.map(request => `
+                                    <tr>
+                                        <td><strong>${request.name}</strong></td>
+                                        <td>${request.email}</td>
+                                        <td><span class="badge badge-info">${request.collegeId}</span></td>
+                                        <td>
+                                            <span class="badge badge-${request.status === 'approved' ? 'success' : request.status === 'rejected' ? 'danger' : 'warning'}">
+                                                ${request.status.toUpperCase()}
+                                            </span>
+                                        </td>
+                                        <td>${formatDateTime(request.requestedAt)}</td>
+                                        <td>${request.reviewedBy ? request.reviewedBy.name : '-'}</td>
+                                        <td>
+                                            ${request.status === 'pending' ? `
+                                                <button class="btn btn-sm btn-success" onclick="reviewWardenRequest('${request._id}', 'approve')">✅ Approve</button>
+                                                <button class="btn btn-sm btn-danger" onclick="reviewWardenRequest('${request._id}', 'reject')">❌ Reject</button>
+                                            ` : `
+                                                <button class="btn btn-sm" onclick="viewRequestDetails('${request._id}')">👁️ View</button>
+                                            `}
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                ` : '<div class="empty-state"><p>No requests found</p></div>'}
+            </div>
+        `;
+        
+        document.getElementById('content-area').innerHTML = html;
+        hideLoading();
+    } catch (error) {
+        hideLoading();
+        showAlert(error.message || 'Failed to load requests', 'error');
+    }
+}
+
+async function viewRequestDetails(requestId) {
+    try {
+        const result = await apiCall(`/warden-requests/${requestId}`);
+        const request = result.request;
+        
+        const modalHtml = `
+            <div class="modal active" id="requestDetailsModal" onclick="if(event.target === this) closeModal('requestDetailsModal')">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Warden Request Details</h3>
+                        <button class="modal-close" onclick="closeModal('requestDetailsModal')">&times;</button>
+                    </div>
+                    <div>
+                        <div style="background: var(--light-gray); padding: 20px; border-radius: var(--radius); margin-bottom: 20px;">
+                            <div class="flex-between mb-3">
+                                <h4 style="margin: 0;">Request Status</h4>
+                                <span class="badge badge-${request.status === 'approved' ? 'success' : request.status === 'rejected' ? 'danger' : 'warning'}" style="font-size: 16px; padding: 8px 16px;">
+                                    ${request.status.toUpperCase()}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <h4 style="margin-bottom: 16px;">Student Information</h4>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 24px;">
+                            <div>
+                                <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 4px;">Name</p>
+                                <p style="font-weight: 600;">${request.name}</p>
+                            </div>
+                            <div>
+                                <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 4px;">Email</p>
+                                <p style="font-weight: 600;">${request.email}</p>
+                            </div>
+                            <div>
+                                <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 4px;">College ID</p>
+                                <p style="font-weight: 600;">${request.collegeId}</p>
+                            </div>
+                            <div>
+                                <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 4px;">Phone</p>
+                                <p style="font-weight: 600;">${request.phoneNumber || 'N/A'}</p>
+                            </div>
+                            <div>
+                                <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 4px;">Department</p>
+                                <p style="font-weight: 600;">${request.department || 'N/A'}</p>
+                            </div>
+                            <div>
+                                <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 4px;">Requested On</p>
+                                <p style="font-weight: 600;">${formatDateTime(request.requestedAt)}</p>
+                            </div>
+                        </div>
+                        
+                        ${request.reviewedBy ? `
+                            <hr style="margin: 24px 0;">
+                            <h4 style="margin-bottom: 16px;">Review Information</h4>
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 16px;">
+                                <div>
+                                    <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 4px;">Reviewed By</p>
+                                    <p style="font-weight: 600;">${request.reviewedBy.name}</p>
+                                </div>
+                                <div>
+                                    <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 4px;">Reviewed On</p>
+                                    <p style="font-weight: 600;">${formatDateTime(request.reviewedAt)}</p>
+                                </div>
+                            </div>
+                            ${request.reviewNotes ? `
+                                <div>
+                                    <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 8px;">Review Notes</p>
+                                    <p style="padding: 16px; background: var(--light-gray); border-radius: var(--radius);">${request.reviewNotes}</p>
+                                </div>
+                            ` : ''}
+                        ` : ''}
+                        
+                        ${request.status === 'pending' ? `
+                            <hr style="margin: 24px 0;">
+                            <div class="flex gap-2">
+                                <button class="btn btn-success" onclick="closeModal('requestDetailsModal'); reviewWardenRequest('${request._id}', 'approve')">
+                                    ✅ Approve Request
+                                </button>
+                                <button class="btn btn-danger" onclick="closeModal('requestDetailsModal'); reviewWardenRequest('${request._id}', 'reject')">
+                                    ❌ Reject Request
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    } catch (error) {
+        showAlert(error.message || 'Failed to load request details', 'error');
+    }
+}
+
 
 // Approval functions removed - system simplified
 
@@ -1418,6 +1711,9 @@ async function renderAllUsers() {
 window.renderAdminDashboard = renderAdminDashboard;
 window.renderPendingWardens = renderPendingWardens;
 window.renderAllUsers = renderAllUsers;
+window.filterRequestsByStatus = filterRequestsByStatus;
+window.loadAllWardenRequests = loadAllWardenRequests;
+window.viewRequestDetails = viewRequestDetails;
 
 // Make all dashboard functions globally accessible
 window.loadDashboard = loadDashboard;
