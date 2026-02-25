@@ -1063,12 +1063,15 @@ async function renderWardenRequest() {
 
 async function submitWardenRequest() {
     try {
+        console.log('📝 Submitting warden request...');
         showLoading();
         const result = await apiCall('/warden-requests', 'POST');
+        console.log('✅ Request submitted:', result);
         hideLoading();
         showAlert(result.message, 'success');
         setTimeout(() => renderWardenRequest(), 1500);
     } catch (error) {
+        console.error('❌ Error submitting request:', error);
         hideLoading();
         showAlert(error.message, 'error');
     }
@@ -1197,9 +1200,14 @@ async function renderAdminDashboard() {
 async function renderPendingWardens() {
     try {
         showLoading();
+        console.log('🔍 Fetching warden requests...');
+        
         // Fetch all warden requests to show stats
         const allRequestsResult = await apiCall('/warden-requests');
+        console.log('📊 All requests result:', allRequestsResult);
+        
         const pendingResult = await apiCall('/warden-requests?status=pending');
+        console.log('📋 Pending requests result:', pendingResult);
         
         const html = `
             <div class="page-header">
