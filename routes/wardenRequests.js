@@ -9,6 +9,8 @@ const { protect, authorize } = require('../middleware/auth');
 // @access  Private (Student)
 router.post('/', protect, async (req, res) => {
     try {
+        console.log('📝 POST /api/warden-requests called by:', req.user?.email, 'Role:', req.user?.role);
+        
         // Check if user already has a pending request
         const existingRequest = await WardenRequest.findOne({
             userId: req.user._id,
@@ -16,6 +18,7 @@ router.post('/', protect, async (req, res) => {
         });
 
         if (existingRequest) {
+            console.log('⚠️ User already has a pending request');
             return res.status(400).json({
                 success: false,
                 message: 'You already have a pending warden request'
@@ -24,6 +27,7 @@ router.post('/', protect, async (req, res) => {
 
         // Check if user is already a warden
         if (req.user.role === 'warden') {
+            console.log('⚠️ User is already a warden');
             return res.status(400).json({
                 success: false,
                 message: 'You already have warden access'
@@ -39,12 +43,15 @@ router.post('/', protect, async (req, res) => {
             phoneNumber: req.user.phoneNumber
         });
 
+        console.log('✅ Warden request created:', wardenRequest._id);
+
         res.status(201).json({
             success: true,
             message: 'Warden access request submitted successfully. Please wait for admin approval.',
             request: wardenRequest
         });
     } catch (error) {
+        console.error('❌ Error in POST /api/warden-requests:', error);
         res.status(500).json({
             success: false,
             message: error.message
@@ -57,6 +64,8 @@ router.post('/', protect, async (req, res) => {
 // @access  Private (Admin)
 router.get('/', protect, authorize('admin'), async (req, res) => {
     try {
+        console.log('📋 GET /api/warden-requests called by:', req.user?.email, 'Role:', req.user?.role);
+        
         const { status } = req.query;
         const filter = status ? { status } : {};
 
@@ -65,6 +74,8 @@ router.get('/', protect, authorize('admin'), async (req, res) => {
             .populate('reviewedBy', 'name')
             .sort({ requestedAt: -1 });
 
+        console.log(`📊 Found ${requests.length} warden requests (filter: ${status || 'all'})`);
+
         const stats = {
             total: await WardenRequest.countDocuments(),
             pending: await WardenRequest.countDocuments({ status: 'pending' }),
@@ -72,12 +83,15 @@ router.get('/', protect, authorize('admin'), async (req, res) => {
             rejected: await WardenRequest.countDocuments({ status: 'rejected' })
         };
 
+        console.log('📊 Stats:', stats);
+
         res.json({
             success: true,
             requests,
             stats
         });
     } catch (error) {
+        console.error('❌ Error in GET /api/warden-requests:', error);
         res.status(500).json({
             success: false,
             message: error.message
@@ -93,6 +107,34 @@ router.get('/my-request', protect, async (req, res) => {
         const request = await WardenRequest.findOne({ userId: req.user._id })
             .populate('reviewedBy', 'name')
             .sort({ requestedAt: -1 });
+
+        res.json({
+            success: true,
+            request
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+// @route   GET /api/warden-requests/:id
+// @desc    Get specific warden request (Admin only)
+// @access  Private (Admin)
+router.get('/:id', protect, authorize('admin'), async (req, res) => {
+    try {
+        const request = await WardenRequest.findById(req.params.id)
+            .populate('userId', 'name email collegeId department phoneNumber roomNumber')
+            .populate('reviewedBy', 'name');
+
+        if (!request) {
+            return res.status(404).json({
+                success: false,
+                message: 'Request not found'
+            });
+        }
 
         res.json({
             success: true,
