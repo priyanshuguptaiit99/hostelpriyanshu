@@ -116,6 +116,31 @@ async function loadView(viewName) {
                     contentArea.innerHTML = '<div class="empty-state"><h3>Complaints</h3><p>This feature is under development</p></div>';
                 }
                 break;
+            case 'allComplaints':
+                if (window.renderAllComplaints) {
+                    await window.renderAllComplaints();
+                } else if (window.renderComplaints) {
+                    await window.renderComplaints();
+                } else {
+                    contentArea.innerHTML = '<div class="empty-state"><h3>Complaints</h3><p>This feature is under development</p></div>';
+                }
+                break;
+            case 'manageBills':
+                if (window.renderManageBills) {
+                    await window.renderManageBills();
+                } else if (window.renderMessBills) {
+                    await window.renderMessBills();
+                } else {
+                    contentArea.innerHTML = '<div class="empty-state"><h3>Manage Bills</h3><p>This feature is under development</p></div>';
+                }
+                break;
+            case 'attendanceReport':
+                if (window.renderAttendanceReport) {
+                    await window.renderAttendanceReport();
+                } else {
+                    contentArea.innerHTML = '<div class="empty-state"><h3>Attendance Report</h3><p>This feature is under development</p></div>';
+                }
+                break;
             case 'adminDashboard':
                 await renderAdminDashboard();
                 break;
