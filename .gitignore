@@ -127,9 +127,6 @@ Desktop.ini
 temp/
 tmp/
 
-# Documentation (deployment related - keep in repo)
-# Uncomment if you don't want these in your repo
-# DEPLOYMENT_GUIDE.md
-# *_FIX.md
-# *_SUMMARY.md
-# *_INSTRUCTIONS.md
+# Documentation files
+*.md
+!README.md

@@ -314,3 +314,37 @@ node list-users.js
 ```
 
 **Done!** Your user data is deleted from the database. 🎉
+
+
+---
+
+## 🆕 NEW: Self-Service Account Deletion
+
+Users can now delete their own accounts directly from the login page!
+
+### How to Delete Your Account:
+
+1. **Go to the Login Page**
+2. **Click "🗑️ Delete My Account"** at the bottom
+3. **Enter your college email**
+4. **Enter your password** (if you registered with email/password)
+   - If you only use Google login, leave password field empty
+5. **Confirm deletion** (this action cannot be undone!)
+6. **Your account will be permanently deleted**
+
+### What Gets Deleted:
+- ✅ Your user account
+- ✅ All your hostel records
+- ✅ Your complaints and requests
+- ✅ All associated data
+
+### Important Notes:
+- ⚠️ Deletion is permanent and cannot be undone
+- ⚠️ You must use your NITJ college email (@nitj.ac.in)
+- ⚠️ If you have a password, you must enter it correctly
+- ⚠️ Google-only users don't need a password
+
+---
+
+**Version:** 2.0 (Added self-service account deletion)
+**Last Updated:** February 26, 2026

@@ -741,3 +741,56 @@ router.post('/verify-email-otp', async (req, res) => {
     });
   }
 });
+
+
+// @route   POST /api/auth/delete-account
+// @desc    Delete user account (self-service)
+// @access  Public
+router.post('/delete-account', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
+
+    // Find user
+    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // If user has a password (not Google-only), verify it
+    if (password && !user.password.startsWith('google-oauth-')) {
+      const isMatch = await user.comparePassword(password);
+      if (!isMatch) {
+        return res.status(401).json({
+          success: false,
+          message: 'Incorrect password'
+        });
+      }
+    }
+
+    // Delete user
+    await User.findByIdAndDelete(user._id);
+
+    res.json({
+      success: true,
+      message: 'Account deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete account error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting account',
+      error: error.message
+    });
+  }
+});

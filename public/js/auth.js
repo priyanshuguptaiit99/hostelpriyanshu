@@ -540,3 +540,121 @@ async function resendOTP(email) {
 window.showEmailVerification = showEmailVerification;
 window.handleEmailVerification = handleEmailVerification;
 window.resendOTP = resendOTP;
+
+
+
+// ==================== DELETE ACCOUNT ====================
+function showDeleteAccount() {
+    const authSection = document.getElementById('auth-section');
+    if (!authSection) return;
+
+    authSection.innerHTML = `
+        <div class="auth-container" style="max-width: 500px;">
+            <h1>🗑️ Delete My Account</h1>
+            <p class="auth-subtitle" style="color: var(--danger); font-weight: 600;">
+                ⚠️ Warning: This action cannot be undone!
+            </p>
+            <p style="text-align: center; color: var(--text-secondary); margin-bottom: 24px;">
+                All your data will be permanently deleted from our system.
+            </p>
+            
+            <form id="delete-account-form" onsubmit="return handleDeleteAccount(event)">
+                <div class="form-group">
+                    <label for="delete-email">College Email</label>
+                    <input 
+                        type="email" 
+                        id="delete-email" 
+                        placeholder="your.email@nitj.ac.in" 
+                        required
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="delete-password">Password (if you have one)</label>
+                    <input 
+                        type="password" 
+                        id="delete-password" 
+                        placeholder="Leave empty if you only use Google login"
+                    >
+                    <small style="color: var(--text-secondary); display: block; margin-top: 8px;">
+                        If you registered with email/password, enter your password. If you only use Google login, leave this empty.
+                    </small>
+                </div>
+                
+                <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: var(--radius); padding: 16px; margin-bottom: 20px;">
+                    <p style="margin: 0; color: #856404; font-size: 14px; line-height: 1.6;">
+                        <strong>⚠️ This will delete:</strong><br>
+                        • Your account information<br>
+                        • Your hostel records<br>
+                        • Your complaints and requests<br>
+                        • All associated data
+                    </p>
+                </div>
+                
+                <button type="submit" class="btn" style="width: 100%; padding: 16px; font-size: 16px; margin-bottom: 16px; background: var(--danger); color: white;">
+                    🗑️ Delete My Account Permanently
+                </button>
+                
+                <p style="text-align: center; margin-top: 16px;">
+                    <a href="#" onclick="window.showLogin(); return false;" style="color: var(--primary); text-decoration: none; font-weight: 600;">
+                        ← Back to Login
+                    </a>
+                </p>
+            </form>
+        </div>
+    `;
+}
+
+async function handleDeleteAccount(event) {
+    event.preventDefault();
+    
+    const email = document.getElementById('delete-email').value;
+    const password = document.getElementById('delete-password').value;
+    
+    // Validate email domain
+    if (!email.toLowerCase().endsWith('@nitj.ac.in')) {
+        alert('❌ Please enter a valid NITJ college email address');
+        window.showAlert('Invalid email domain', 'error');
+        return false;
+    }
+    
+    // Confirm deletion
+    const confirmed = confirm(
+        '⚠️ ARE YOU ABSOLUTELY SURE?\n\n' +
+        'This will PERMANENTLY DELETE your account and all associated data.\n\n' +
+        'This action CANNOT be undone!\n\n' +
+        'Click OK to proceed with deletion, or Cancel to go back.'
+    );
+    
+    if (!confirmed) {
+        return false;
+    }
+    
+    try {
+        const result = await window.apiCall('/auth/delete-account', 'POST', { 
+            email, 
+            password: password || undefined 
+        });
+        
+        alert('✅ Account deleted successfully. We\'re sorry to see you go!');
+        window.showAlert('Account deleted successfully', 'success');
+        
+        // Clear any stored data
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        
+        setTimeout(() => {
+            window.showLogin();
+        }, 1500);
+    } catch (error) {
+        console.error('Delete account error:', error);
+        alert('❌ Failed to delete account: ' + error.message);
+        window.showAlert(error.message || 'Failed to delete account', 'error');
+    }
+    
+    return false;
+}
+
+// Make functions globally accessible
+window.showDeleteAccount = showDeleteAccount;
+window.handleDeleteAccount = handleDeleteAccount;
