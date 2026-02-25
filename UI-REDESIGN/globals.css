@@ -276,6 +276,7 @@ body {
   @apply border border-slate-200 dark:border-slate-700;
   @apply shadow-card hover:shadow-card-hover;
   @apply transition-all duration-300;
+  @apply text-slate-900 dark:text-slate-100;
 }
 
 .card-hover {
@@ -286,6 +287,7 @@ body {
   @apply glass-card rounded-xl p-6;
   @apply transition-all duration-300;
   @apply hover:-translate-y-1;
+  @apply text-white;
 }
 
 /* ============================================
@@ -418,6 +420,26 @@ body {
 .hover-glow {
   @apply transition-shadow duration-300;
   @apply hover:shadow-glow;
+}
+
+/* Dark mode text color utilities */
+.dark h1,
+.dark h2,
+.dark h3,
+.dark h4,
+.dark h5,
+.dark h6 {
+  @apply text-slate-100;
+}
+
+.dark p,
+.dark span:not(.text-gradient),
+.dark div {
+  @apply text-slate-100;
+}
+
+.dark label {
+  @apply text-slate-200;
 }
 
 /* ============================================

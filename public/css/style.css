@@ -1953,6 +1953,7 @@ textarea:focus-visible {
 /* ==================== DARK MODE SUPPORT ==================== */
 [data-theme="dark"] body {
     background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+    color: var(--text-primary);
 }
 
 [data-theme="dark"] .auth-container,
@@ -1968,6 +1969,43 @@ textarea:focus-visible {
     color: var(--text-primary);
 }
 
+/* Dark mode text colors */
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4,
+[data-theme="dark"] h5,
+[data-theme="dark"] h6 {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] p,
+[data-theme="dark"] span,
+[data-theme="dark"] div,
+[data-theme="dark"] label {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .form-group label {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .quick-action-card h4 {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .empty-state h3 {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .modal-header h3 {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .nav-user span {
+    color: var(--text-primary);
+}
+
 [data-theme="dark"] .auth-form input,
 [data-theme="dark"] .form-group input,
 [data-theme="dark"] .form-group select,
@@ -1980,10 +2018,26 @@ textarea:focus-visible {
 
 [data-theme="dark"] table th {
     background: var(--light-gray);
+    color: var(--text-primary);
 }
 
 [data-theme="dark"] table tbody tr:hover {
     background: rgba(79, 70, 229, 0.1);
+}
+
+[data-theme="dark"] .filter-btn {
+    background: var(--dark-light);
+    color: var(--text-primary);
+    border-color: var(--border);
+}
+
+[data-theme="dark"] .modal-close {
+    background: var(--light-gray);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .search-bar input::placeholder {
+    color: var(--text-secondary);
 }
 
 /* ==================== CUSTOM ANIMATIONS ==================== */
@@ -2339,6 +2393,35 @@ table tbody tr:hover::before {
     text-shadow:
         0 0 4px rgba(129, 140, 248, 0.9),
         0 0 14px rgba(129, 140, 248, 0.6);
+}
+
+/* Additional dark mode text visibility fixes */
+[data-theme="dark"] .stat-card h4 {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .stat-card .stat-label {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .card h3 {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .auth-subtitle {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .divider span {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .form-group small {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .footer-content .tech-stack {
+    color: var(--text-secondary);
 }
 
 /* ==================== CARD FLIP EFFECT (Ready) ==================== */
