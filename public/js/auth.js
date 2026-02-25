@@ -171,6 +171,22 @@ async function handleRegister(event) {
             // Show email verification form
             setTimeout(() => {
                 showEmailVerification(email);
+                
+                // Show OTP in development mode
+                if (result.otp) {
+                    setTimeout(() => {
+                        const otpDisplay = document.getElementById('otp-display');
+                        const devOtp = document.getElementById('dev-otp');
+                        if (otpDisplay && devOtp) {
+                            devOtp.textContent = result.otp;
+                            otpDisplay.style.display = 'block';
+                        }
+                    }, 200);
+                    console.log('=================================');
+                    console.log('DEVELOPMENT MODE - OTP:', result.otp);
+                    console.log('=================================');
+                }
+                
                 isRegistering = false;
             }, 1500);
         } else {
@@ -309,6 +325,21 @@ async function handleGoogleLogin() {
                         window.showAlert('Please verify your email with the OTP sent to your college email', 'warning');
                         setTimeout(() => {
                             showEmailVerification(authResult.user.email);
+                            
+                            // Show OTP in development mode
+                            if (authResult.otp) {
+                                setTimeout(() => {
+                                    const otpDisplay = document.getElementById('otp-display');
+                                    const devOtp = document.getElementById('dev-otp');
+                                    if (otpDisplay && devOtp) {
+                                        devOtp.textContent = authResult.otp;
+                                        otpDisplay.style.display = 'block';
+                                    }
+                                }, 200);
+                                console.log('=================================');
+                                console.log('DEVELOPMENT MODE - OTP:', authResult.otp);
+                                console.log('=================================');
+                            }
                         }, 500);
                         return;
                     }
@@ -333,7 +364,20 @@ async function handleGoogleLogin() {
                 } catch (error) {
                     hideLoading();
                     console.error('Google auth error:', error);
-                    window.showAlert(error.message || 'Google authentication failed', 'error');
+                    
+                    // Check if it's a college email error
+                    if (error.message && error.message.includes('@nitj.ac.in')) {
+                        alert('❌ Only NITJ College Email Allowed!\n\nPlease sign in with your college email address ending with @nitj.ac.in');
+                        window.showAlert('Only NITJ college email addresses are allowed', 'error');
+                    } else if (error.requiresVerification) {
+                        window.showAlert('Please verify your email', 'warning');
+                        setTimeout(() => {
+                            showEmailVerification(error.email);
+                        }, 500);
+                    } else {
+                        alert('❌ Google authentication failed: ' + error.message);
+                        window.showAlert(error.message || 'Google authentication failed', 'error');
+                    }
                 }
             } else if (event.data.type === 'GOOGLE_AUTH_ERROR') {
                 popup.close();
@@ -365,31 +409,72 @@ function showEmailVerification(email) {
     if (!authSection) return;
 
     authSection.innerHTML = `
-        <div class="auth-container">
-            <h1>Verify Email</h1>
-            <p class="auth-subtitle">Enter the OTP sent to ${email}</p>
+        <div class="auth-container" style="max-width: 500px;">
+            <h1>📧 Verify Your Email</h1>
+            <p class="auth-subtitle">We've sent a 6-digit OTP to</p>
+            <p style="text-align: center; color: var(--primary); font-weight: 700; font-size: 16px; margin-bottom: 24px;">${email}</p>
             
             <form id="verify-email-form" onsubmit="return handleEmailVerification(event)">
-                <div class="form-input-wrapper" data-icon="📧">
-                    <input type="email" id="verify-email" value="${email}" readonly required>
+                <input type="hidden" id="verify-email" value="${email}">
+                
+                <div class="form-group" style="margin-bottom: 24px;">
+                    <label for="verify-otp" style="display: block; text-align: center; margin-bottom: 12px; font-size: 14px; color: var(--text-secondary);">
+                        Enter OTP
+                    </label>
+                    <input 
+                        type="text" 
+                        id="verify-otp" 
+                        placeholder="000000" 
+                        maxlength="6" 
+                        pattern="[0-9]{6}"
+                        style="width: 100%; padding: 18px; font-size: 32px; text-align: center; letter-spacing: 12px; font-weight: 700; border: 2px solid var(--border); border-radius: var(--radius);"
+                        required
+                        autocomplete="off"
+                    >
+                    <small style="display: block; text-align: center; margin-top: 8px; color: var(--text-secondary);">
+                        ⏱️ OTP is valid for 10 minutes
+                    </small>
                 </div>
                 
-                <div class="form-input-wrapper" data-icon="🔑">
-                    <input type="text" id="verify-otp" placeholder="Enter 6-digit OTP" maxlength="6" pattern="[0-9]{6}" required>
-                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 16px; font-size: 16px; margin-bottom: 16px;">
+                    ✅ Verify Email
+                </button>
                 
-                <button type="submit" class="btn btn-primary">Verify Email</button>
+                <div style="text-align: center; padding: 16px; background: var(--light-gray); border-radius: var(--radius); margin-bottom: 16px;">
+                    <p style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 14px;">
+                        Didn't receive the OTP?
+                    </p>
+                    <button type="button" onclick="resendOTP('${email}'); return false;" class="btn btn-secondary" style="padding: 10px 24px; font-size: 14px;">
+                        📨 Resend OTP
+                    </button>
+                </div>
                 
                 <p style="text-align: center; margin-top: 16px;">
-                    Didn't receive OTP? <a href="#" onclick="resendOTP('${email}'); return false;">Resend OTP</a>
-                </p>
-                
-                <p style="text-align: center; margin-top: 8px;">
-                    <a href="#" onclick="window.showLogin(); return false;">Back to Login</a>
+                    <a href="#" onclick="window.showLogin(); return false;" style="color: var(--primary); text-decoration: none; font-weight: 600;">
+                        ← Back to Login
+                    </a>
                 </p>
             </form>
+            
+            <div id="otp-display" style="display: none; margin-top: 20px; padding: 16px; background: #fff3cd; border: 2px solid #ffc107; border-radius: var(--radius); text-align: center;">
+                <p style="margin: 0 0 8px 0; color: #856404; font-weight: 600;">🔧 Development Mode</p>
+                <p style="margin: 0; color: #856404; font-size: 14px;">Your OTP: <strong id="dev-otp" style="font-size: 24px; letter-spacing: 4px;"></strong></p>
+            </div>
         </div>
     `;
+    
+    // Auto-focus on OTP input
+    setTimeout(() => {
+        const otpInput = document.getElementById('verify-otp');
+        if (otpInput) {
+            otpInput.focus();
+            
+            // Format OTP input
+            otpInput.addEventListener('input', function(e) {
+                this.value = this.value.replace(/[^0-9]/g, '');
+            });
+        }
+    }, 100);
 }
 
 async function handleEmailVerification(event) {
@@ -428,6 +513,19 @@ async function resendOTP(email) {
         
         alert('✅ OTP resent! Please check your email.');
         window.showAlert('OTP resent to your email', 'success');
+        
+        // Show OTP in development mode
+        if (result.otp) {
+            const otpDisplay = document.getElementById('otp-display');
+            const devOtp = document.getElementById('dev-otp');
+            if (otpDisplay && devOtp) {
+                devOtp.textContent = result.otp;
+                otpDisplay.style.display = 'block';
+            }
+            console.log('=================================');
+            console.log('DEVELOPMENT MODE - OTP:', result.otp);
+            console.log('=================================');
+        }
     } catch (error) {
         console.error('Resend OTP error:', error);
         alert('❌ Failed to resend OTP: ' + error.message);
