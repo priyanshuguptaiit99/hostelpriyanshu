@@ -117,19 +117,18 @@ router.post('/register', async (req, res) => {
     } catch (emailError) {
       console.error('Email sending error:', emailError);
       // Don't fail registration if email fails, user can request OTP again
-      if (process.env.NODE_ENV === 'development') {
-        console.log('=================================');
-        console.log('DEVELOPMENT MODE - OTP:', otp);
-        console.log('Email:', user.email);
-        console.log('=================================');
-      }
+      console.log('=================================');
+      console.log('OTP (Email service unavailable):', otp);
+      console.log('Email:', user.email);
+      console.log('User:', user.name);
+      console.log('=================================');
     }
 
     res.status(201).json({ 
       success: true, 
       message: 'Registration successful! An OTP has been sent to your college email. Please verify to login.',
       requiresVerification: true,
-      otp: process.env.NODE_ENV === 'development' ? otp : undefined, // Show OTP in development mode
+      otp: otp, // Always show OTP for now (until email is configured)
       user: {
         id: user._id,
         name: user.name,
@@ -487,19 +486,18 @@ router.post('/google/callback', async (req, res) => {
                 });
             } catch (emailError) {
                 console.error('Email sending error:', emailError);
-                if (process.env.NODE_ENV === 'development') {
-                    console.log('=================================');
-                    console.log('DEVELOPMENT MODE - OTP:', otp);
-                    console.log('Email:', user.email);
-                    console.log('=================================');
-                }
+                console.log('=================================');
+                console.log('OTP (Email service unavailable):', otp);
+                console.log('Email:', user.email);
+                console.log('User:', user.name);
+                console.log('=================================');
             }
 
             return res.json({
                 success: true,
                 message: 'Account created! Please verify your email with the OTP sent to your college email.',
                 requiresVerification: true,
-                otp: process.env.NODE_ENV === 'development' ? otp : undefined, // Show OTP in development mode
+                otp: otp, // Always show OTP for now (until email is configured)
                 user: {
                     _id: user._id,
                     name: user.name,
@@ -678,29 +676,23 @@ router.post('/send-verification-otp', async (req, res) => {
       res.json({
         success: true,
         message: 'OTP sent to your college email. Please check your inbox.',
-        otp: process.env.NODE_ENV === 'development' ? otp : undefined // Show OTP in development mode
+        otp: otp // Always show OTP for now (until email is configured)
       });
     } catch (emailError) {
       console.error('Email sending error:', emailError);
       
-      // In development, still allow verification by showing OTP in console
-      if (process.env.NODE_ENV === 'development') {
-        console.log('=================================');
-        console.log('DEVELOPMENT MODE - OTP:', otp);
-        console.log('Email:', user.email);
-        console.log('=================================');
-        
-        res.json({
-          success: true,
-          message: 'OTP generated (Email service unavailable - check console for OTP)',
-          otp: otp // Show OTP in response for development
-        });
-      } else {
-        res.status(500).json({
-          success: false,
-          message: 'Failed to send OTP email. Please try again later.'
-        });
-      }
+      // Always allow verification by showing OTP when email fails
+      console.log('=================================');
+      console.log('OTP (Email service unavailable):', otp);
+      console.log('Email:', user.email);
+      console.log('User:', user.name);
+      console.log('=================================');
+      
+      res.json({
+        success: true,
+        message: 'OTP generated successfully. Check console/screen for OTP.',
+        otp: otp // Always show OTP when email fails
+      });
     }
   } catch (error) {
     console.error('Send OTP error:', error);
