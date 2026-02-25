@@ -20,8 +20,11 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    // Validate email domain - must be @nitj.ac.in
-    if (!email.toLowerCase().endsWith('@nitj.ac.in')) {
+    // Validate email domain - must be @nitj.ac.in or @hostel.com (for test accounts)
+    const isNitjEmail = email.toLowerCase().endsWith('@nitj.ac.in');
+    const isTestAccount = email.toLowerCase().endsWith('@hostel.com');
+    
+    if (!isNitjEmail && !isTestAccount) {
       return res.status(400).json({
         success: false,
         message: 'Only NITJ college email addresses (@nitj.ac.in) are allowed'
@@ -159,11 +162,16 @@ router.post('/login', async (req, res) => {
     }
 
     // Validate email domain if email is provided
-    if (email && !email.toLowerCase().endsWith('@nitj.ac.in')) {
-      return res.status(400).json({
-        success: false,
-        message: 'Only NITJ college email addresses (@nitj.ac.in) are allowed'
-      });
+    if (email) {
+      const isNitjEmail = email.toLowerCase().endsWith('@nitj.ac.in');
+      const isTestAccount = email.toLowerCase().endsWith('@hostel.com');
+      
+      if (!isNitjEmail && !isTestAccount) {
+        return res.status(400).json({
+          success: false,
+          message: 'Only NITJ college email addresses (@nitj.ac.in) are allowed'
+        });
+      }
     }
 
     // Find user by email or collegeId
@@ -189,8 +197,15 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Check if email is verified
-    if (!user.emailVerified) {
+    // Test accounts that bypass email verification
+    const testAccounts = [
+      'adminpriyanshu@hostel.com',
+      'wardenpriyanshu@hostel.com',
+      'studentpriyanshu@hostel.com'
+    ];
+
+    // Check if email is verified (skip for test accounts)
+    if (!user.emailVerified && !testAccounts.includes(user.email.toLowerCase())) {
       return res.status(403).json({
         success: false,
         message: 'Please verify your email before logging in. Check your college email for the OTP.',

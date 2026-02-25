@@ -27,7 +27,7 @@ async function handleLogin(event) {
     const password = document.getElementById('login-password').value;
 
     // Validate email domain
-    if (email && !email.toLowerCase().endsWith('@nitj.ac.in')) {
+    if (email && !email.toLowerCase().endsWith('@nitj.ac.in') && !email.toLowerCase().endsWith('@hostel.com')) {
         alert('❌ Only NITJ college email addresses (@nitj.ac.in) are allowed');
         window.showAlert('Only NITJ college email addresses (@nitj.ac.in) are allowed', 'error');
         isLoggingIn = false;
@@ -158,7 +158,7 @@ async function handleRegister(event) {
     const email = document.getElementById('reg-email').value;
     
     // Validate email domain
-    if (!email.toLowerCase().endsWith('@nitj.ac.in')) {
+    if (!email.toLowerCase().endsWith('@nitj.ac.in') && !email.toLowerCase().endsWith('@hostel.com')) {
         alert('❌ Only NITJ college email addresses (@nitj.ac.in) are allowed');
         window.showAlert('Only NITJ college email addresses (@nitj.ac.in) are allowed', 'error');
         isRegistering = false;
