@@ -26,6 +26,14 @@ async function handleLogin(event) {
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
 
+    // Validate email domain
+    if (email && !email.toLowerCase().endsWith('@nitj.ac.in')) {
+        alert('❌ Only NITJ college email addresses (@nitj.ac.in) are allowed');
+        window.showAlert('Only NITJ college email addresses (@nitj.ac.in) are allowed', 'error');
+        isLoggingIn = false;
+        return false;
+    }
+
     console.log('Login attempt:', email); // Debug log
     console.log('apiCall available?', typeof window.apiCall); // Debug log
 
@@ -90,9 +98,20 @@ async function handleLogin(event) {
         }
     } catch (error) {
         console.error('Login error:', error); // Debug log
-        alert('❌ Login failed: ' + error.message);
-        window.showAlert(error.message || 'Login failed', 'error');
-        isLoggingIn = false;
+        
+        // Check if email verification is required
+        if (error.requiresVerification) {
+            alert('📧 Please verify your email before logging in. Check your college email for the OTP.');
+            window.showAlert('Email verification required', 'warning');
+            setTimeout(() => {
+                showEmailVerification(error.email || email);
+                isLoggingIn = false;
+            }, 500);
+        } else {
+            alert('❌ Login failed: ' + error.message);
+            window.showAlert(error.message || 'Login failed', 'error');
+            isLoggingIn = false;
+        }
     }
     
     return false; // Prevent form submission
@@ -111,10 +130,20 @@ async function handleRegister(event) {
     console.log('handleRegister called'); // Debug log
     
     const roleElement = document.getElementById('reg-role');
+    const email = document.getElementById('reg-email').value;
+    
+    // Validate email domain
+    if (!email.toLowerCase().endsWith('@nitj.ac.in')) {
+        alert('❌ Only NITJ college email addresses (@nitj.ac.in) are allowed');
+        window.showAlert('Only NITJ college email addresses (@nitj.ac.in) are allowed', 'error');
+        isRegistering = false;
+        return false;
+    }
+    
     const data = {
         name: document.getElementById('reg-name').value,
         collegeId: document.getElementById('reg-college-id').value,
-        email: document.getElementById('reg-email').value,
+        email: email,
         password: document.getElementById('reg-password').value,
         role: roleElement ? roleElement.value : 'student',
         roomNumber: document.getElementById('reg-room').value,
@@ -131,17 +160,28 @@ async function handleRegister(event) {
         const result = await window.apiCall('/auth/register', 'POST', data);
         console.log('Register result:', result); // Debug log
         
-        // Show success alert
-        alert('✅ Registration successful! You can now login.');
-        window.showAlert(result.message || 'Registration successful!', 'success');
-        
         // Clear form
         document.getElementById('register-form-element').reset();
         
-        setTimeout(() => {
-            window.showLogin();
-            isRegistering = false;
-        }, 1500);
+        // Check if email verification is required
+        if (result.requiresVerification) {
+            alert('✅ Registration successful! An OTP has been sent to ' + email + '. Please verify your email to login.');
+            window.showAlert('Registration successful! Please check your email for OTP.', 'success');
+            
+            // Show email verification form
+            setTimeout(() => {
+                showEmailVerification(email);
+                isRegistering = false;
+            }, 1500);
+        } else {
+            alert('✅ Registration successful! You can now login.');
+            window.showAlert(result.message || 'Registration successful!', 'success');
+            
+            setTimeout(() => {
+                window.showLogin();
+                isRegistering = false;
+            }, 1500);
+        }
     } catch (error) {
         console.error('Register error:', error); // Debug log
         
@@ -264,6 +304,15 @@ async function handleGoogleLogin() {
                     
                     hideLoading();
                     
+                    // Check if email verification is required
+                    if (authResult.requiresVerification) {
+                        window.showAlert('Please verify your email with the OTP sent to your college email', 'warning');
+                        setTimeout(() => {
+                            showEmailVerification(authResult.user.email);
+                        }, 500);
+                        return;
+                    }
+                    
                     // Check approval status
                     if (authResult.user.approvalStatus === 'pending') {
                         window.showAlert('Account pending approval', 'warning');
@@ -308,3 +357,85 @@ async function handleGoogleLogin() {
 
 // Make function globally accessible
 window.handleGoogleLogin = handleGoogleLogin;
+
+
+// ==================== EMAIL VERIFICATION ====================
+function showEmailVerification(email) {
+    const authSection = document.getElementById('auth-section');
+    if (!authSection) return;
+
+    authSection.innerHTML = `
+        <div class="auth-container">
+            <h1>Verify Email</h1>
+            <p class="auth-subtitle">Enter the OTP sent to ${email}</p>
+            
+            <form id="verify-email-form" onsubmit="return handleEmailVerification(event)">
+                <div class="form-input-wrapper" data-icon="📧">
+                    <input type="email" id="verify-email" value="${email}" readonly required>
+                </div>
+                
+                <div class="form-input-wrapper" data-icon="🔑">
+                    <input type="text" id="verify-otp" placeholder="Enter 6-digit OTP" maxlength="6" pattern="[0-9]{6}" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Verify Email</button>
+                
+                <p style="text-align: center; margin-top: 16px;">
+                    Didn't receive OTP? <a href="#" onclick="resendOTP('${email}'); return false;">Resend OTP</a>
+                </p>
+                
+                <p style="text-align: center; margin-top: 8px;">
+                    <a href="#" onclick="window.showLogin(); return false;">Back to Login</a>
+                </p>
+            </form>
+        </div>
+    `;
+}
+
+async function handleEmailVerification(event) {
+    event.preventDefault();
+    
+    const email = document.getElementById('verify-email').value;
+    const otp = document.getElementById('verify-otp').value;
+    
+    if (!otp || otp.length !== 6) {
+        alert('❌ Please enter a valid 6-digit OTP');
+        window.showAlert('Please enter a valid 6-digit OTP', 'error');
+        return false;
+    }
+    
+    try {
+        const result = await window.apiCall('/auth/verify-email-otp', 'POST', { email, otp });
+        
+        alert('✅ Email verified successfully! You can now login.');
+        window.showAlert('Email verified successfully!', 'success');
+        
+        setTimeout(() => {
+            window.showLogin();
+        }, 1500);
+    } catch (error) {
+        console.error('Verification error:', error);
+        alert('❌ Verification failed: ' + error.message);
+        window.showAlert(error.message || 'Verification failed', 'error');
+    }
+    
+    return false;
+}
+
+async function resendOTP(email) {
+    try {
+        const result = await window.apiCall('/auth/send-verification-otp', 'POST', { email });
+        
+        alert('✅ OTP resent! Please check your email.');
+        window.showAlert('OTP resent to your email', 'success');
+    } catch (error) {
+        console.error('Resend OTP error:', error);
+        alert('❌ Failed to resend OTP: ' + error.message);
+        window.showAlert(error.message || 'Failed to resend OTP', 'error');
+    }
+}
+
+// Make functions globally accessible
+window.showEmailVerification = showEmailVerification;
+window.handleEmailVerification = handleEmailVerification;
+window.resendOTP = resendOTP;

@@ -80,6 +80,16 @@ const userSchema = new mongoose.Schema({
     type: Boolean, 
     default: true 
   },
+  emailVerified: {
+    type: Boolean,
+    default: false
+  },
+  emailVerificationOTP: {
+    type: String
+  },
+  emailVerificationOTPExpires: {
+    type: Date
+  },
   createdAt: { 
     type: Date, 
     default: Date.now 
@@ -112,6 +122,27 @@ userSchema.pre('save', async function(next) {
 // Method to compare password
 userSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
+};
+
+// Method to generate email verification OTP
+userSchema.methods.generateEmailOTP = function() {
+  const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
+  this.emailVerificationOTP = otp;
+  this.emailVerificationOTPExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+  return otp;
+};
+
+// Method to verify email OTP
+userSchema.methods.verifyEmailOTP = function(otp) {
+  if (!this.emailVerificationOTP || !this.emailVerificationOTPExpires) {
+    return false;
+  }
+  
+  if (Date.now() > this.emailVerificationOTPExpires) {
+    return false; // OTP expired
+  }
+  
+  return this.emailVerificationOTP === otp;
 };
 
 // Remove password from JSON response

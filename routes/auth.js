@@ -3,6 +3,7 @@ const router = express.Router();
 const User = require('../models/User');
 const generateToken = require('../utils/generateToken');
 const { protect } = require('../middleware/auth');
+const sendEmail = require('../utils/email');
 
 // @route   POST /api/auth/register
 // @desc    Register a new user
@@ -16,6 +17,14 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ 
         success: false, 
         message: 'Please provide name, college ID, email, and password' 
+      });
+    }
+
+    // Validate email domain - must be @nitj.ac.in
+    if (!email.toLowerCase().endsWith('@nitj.ac.in')) {
+      return res.status(400).json({
+        success: false,
+        message: 'Only NITJ college email addresses (@nitj.ac.in) are allowed'
       });
     }
 
@@ -55,13 +64,13 @@ router.post('/register', async (req, res) => {
       message += 'Your account is pending admin approval. You will be notified once approved.';
     } else if (role === 'student') {
       approvalStatus = 'approved'; // Students are auto-approved
-      message += 'Your account has been created successfully. You can now login.';
+      message += 'Please verify your college email to complete registration.';
     } else {
       // mess_staff, maintenance_staff
       message += 'Your account is pending admin approval. You will be notified once approved.';
     }
 
-    // Create user
+    // Create user (email not verified yet)
     const user = await User.create({
       name,
       collegeId,
@@ -73,19 +82,55 @@ router.post('/register', async (req, res) => {
       hostelBlock,
       department,
       year,
-      phoneNumber
+      phoneNumber,
+      emailVerified: false // Email not verified yet
     });
+
+    // Generate and send OTP
+    const otp = user.generateEmailOTP();
+    await user.save();
+
+    // Send OTP email
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: 'NITJ Hostel Management - Verify Your Email',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px;">
+            <div style="background: white; padding: 30px; border-radius: 8px;">
+              <h2 style="color: #667eea; text-align: center; margin-bottom: 20px;">🏠 NITJ Hostel Management</h2>
+              <h3 style="color: #333; margin-bottom: 15px;">Welcome ${user.name}!</h3>
+              <p style="color: #666; font-size: 16px; line-height: 1.6;">Thank you for registering with NITJ Hostel Management System.</p>
+              <p style="color: #666; font-size: 16px; line-height: 1.6;">Please verify your college email address using the OTP below:</p>
+              <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
+                <h1 style="color: #667eea; font-size: 36px; letter-spacing: 8px; margin: 0;">${otp}</h1>
+              </div>
+              <p style="color: #666; font-size: 14px; line-height: 1.6;"><strong>This OTP is valid for 10 minutes.</strong></p>
+              <p style="color: #666; font-size: 14px; line-height: 1.6;">After verification, you can login to access the hostel management system.</p>
+              <p style="color: #666; font-size: 14px; line-height: 1.6;">If you didn't register for this account, please ignore this email.</p>
+              <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+              <p style="color: #999; font-size: 12px; text-align: center;">© 2026 NITJ Hostel Management System. All rights reserved.</p>
+            </div>
+          </div>
+        `
+      });
+    } catch (emailError) {
+      console.error('Email sending error:', emailError);
+      // Don't fail registration if email fails, user can request OTP again
+    }
 
     res.status(201).json({ 
       success: true, 
-      message,
+      message: 'Registration successful! An OTP has been sent to your college email. Please verify to login.',
+      requiresVerification: true,
       user: {
         id: user._id,
         name: user.name,
         collegeId: user.collegeId,
         email: user.email,
         role: user.role,
-        approvalStatus: user.approvalStatus
+        approvalStatus: user.approvalStatus,
+        emailVerified: user.emailVerified
       }
     });
   } catch (error) {
@@ -113,6 +158,14 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    // Validate email domain if email is provided
+    if (email && !email.toLowerCase().endsWith('@nitj.ac.in')) {
+      return res.status(400).json({
+        success: false,
+        message: 'Only NITJ college email addresses (@nitj.ac.in) are allowed'
+      });
+    }
+
     // Find user by email or collegeId
     const user = await User.findOne({ 
       $or: [
@@ -133,6 +186,16 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ 
         success: false, 
         message: 'Your account has been deactivated. Please contact admin.' 
+      });
+    }
+
+    // Check if email is verified
+    if (!user.emailVerified) {
+      return res.status(403).json({
+        success: false,
+        message: 'Please verify your email before logging in. Check your college email for the OTP.',
+        requiresVerification: true,
+        email: user.email
       });
     }
 
@@ -360,6 +423,14 @@ router.post('/google/callback', async (req, res) => {
 
         const googleUser = await userInfoResponse.json();
 
+        // Validate email domain - must be @nitj.ac.in
+        if (!googleUser.email.toLowerCase().endsWith('@nitj.ac.in')) {
+            return res.status(403).json({
+                success: false,
+                message: 'Only NITJ college email addresses (@nitj.ac.in) are allowed. Please use your college email.'
+            });
+        }
+
         // Check if user exists
         let user = await User.findOne({ email: googleUser.email });
 
@@ -376,13 +447,69 @@ router.post('/google/callback', async (req, res) => {
                 role: 'student',
                 googleId: googleUser.id,
                 avatar: googleUser.picture,
-                isActive: true
+                isActive: true,
+                emailVerified: false // Require email verification even for Google OAuth
+            });
+
+            // Generate and send OTP
+            const otp = user.generateEmailOTP();
+            await user.save();
+
+            // Send OTP email
+            try {
+                await sendEmail({
+                    email: user.email,
+                    subject: 'NITJ Hostel Management - Verify Your Email',
+                    html: `
+                      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px;">
+                        <div style="background: white; padding: 30px; border-radius: 8px;">
+                          <h2 style="color: #667eea; text-align: center; margin-bottom: 20px;">🏠 NITJ Hostel Management</h2>
+                          <h3 style="color: #333; margin-bottom: 15px;">Welcome ${user.name}!</h3>
+                          <p style="color: #666; font-size: 16px; line-height: 1.6;">Thank you for signing up with Google.</p>
+                          <p style="color: #666; font-size: 16px; line-height: 1.6;">Please verify your college email address using the OTP below:</p>
+                          <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
+                            <h1 style="color: #667eea; font-size: 36px; letter-spacing: 8px; margin: 0;">${otp}</h1>
+                          </div>
+                          <p style="color: #666; font-size: 14px; line-height: 1.6;"><strong>This OTP is valid for 10 minutes.</strong></p>
+                          <p style="color: #666; font-size: 14px; line-height: 1.6;">After verification, you can access the hostel management system.</p>
+                          <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                          <p style="color: #999; font-size: 12px; text-align: center;">© 2026 NITJ Hostel Management System. All rights reserved.</p>
+                        </div>
+                      </div>
+                    `
+                });
+            } catch (emailError) {
+                console.error('Email sending error:', emailError);
+            }
+
+            return res.json({
+                success: true,
+                message: 'Account created! Please verify your email with the OTP sent to your college email.',
+                requiresVerification: true,
+                user: {
+                    _id: user._id,
+                    name: user.name,
+                    email: user.email,
+                    collegeId: user.collegeId,
+                    role: user.role,
+                    emailVerified: user.emailVerified
+                }
             });
         } else if (!user.googleId) {
             // Link Google account to existing user
             user.googleId = googleUser.id;
             user.avatar = googleUser.picture;
             await user.save();
+        }
+
+        // Check if email is verified
+        if (!user.emailVerified) {
+            return res.status(403).json({
+                success: false,
+                message: 'Please verify your email before logging in. Check your college email for the OTP.',
+                requiresVerification: true,
+                email: user.email
+            });
         }
 
         // Generate JWT token
@@ -460,6 +587,155 @@ router.get('/users', protect, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error fetching users',
+      error: error.message
+    });
+  }
+});
+
+
+// @route   POST /api/auth/send-verification-otp
+// @desc    Send OTP to verify college email (or resend)
+// @access  Public
+router.post('/send-verification-otp', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
+
+    // Validate email domain
+    if (!email.toLowerCase().endsWith('@nitj.ac.in')) {
+      return res.status(400).json({
+        success: false,
+        message: 'Only NITJ college email addresses (@nitj.ac.in) are allowed'
+      });
+    }
+
+    // Check if user exists
+    let user = await User.findOne({ email: email.toLowerCase() });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'No account found with this email. Please register first.'
+      });
+    }
+
+    if (user.emailVerified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is already verified. You can login now.'
+      });
+    }
+
+    // Generate OTP
+    const otp = user.generateEmailOTP();
+    await user.save();
+
+    // Send OTP email
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: 'NITJ Hostel Management - Email Verification OTP',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px;">
+            <div style="background: white; padding: 30px; border-radius: 8px;">
+              <h2 style="color: #667eea; text-align: center; margin-bottom: 20px;">🏠 NITJ Hostel Management</h2>
+              <h3 style="color: #333; margin-bottom: 15px;">Email Verification</h3>
+              <p style="color: #666; font-size: 16px; line-height: 1.6;">Hello ${user.name},</p>
+              <p style="color: #666; font-size: 16px; line-height: 1.6;">Your OTP for email verification is:</p>
+              <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
+                <h1 style="color: #667eea; font-size: 36px; letter-spacing: 8px; margin: 0;">${otp}</h1>
+              </div>
+              <p style="color: #666; font-size: 14px; line-height: 1.6;"><strong>This OTP is valid for 10 minutes.</strong></p>
+              <p style="color: #666; font-size: 14px; line-height: 1.6;">Enter this OTP to verify your email and complete your registration.</p>
+              <p style="color: #666; font-size: 14px; line-height: 1.6;">If you didn't request this, please ignore this email.</p>
+              <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+              <p style="color: #999; font-size: 12px; text-align: center;">© 2026 NITJ Hostel Management System. All rights reserved.</p>
+            </div>
+          </div>
+        `
+      });
+
+      res.json({
+        success: true,
+        message: 'OTP sent to your college email. Please check your inbox.'
+      });
+    } catch (emailError) {
+      console.error('Email sending error:', emailError);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to send OTP email. Please try again later.'
+      });
+    }
+  } catch (error) {
+    console.error('Send OTP error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error sending OTP',
+      error: error.message
+    });
+  }
+});
+
+// @route   POST /api/auth/verify-email-otp
+// @desc    Verify email with OTP
+// @access  Public
+router.post('/verify-email-otp', async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and OTP are required'
+      });
+    }
+
+    // Find user
+    const user = await User.findOne({ email: email.toLowerCase() });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    if (user.emailVerified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is already verified'
+      });
+    }
+
+    // Verify OTP
+    if (!user.verifyEmailOTP(otp)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired OTP'
+      });
+    }
+
+    // Mark email as verified
+    user.emailVerified = true;
+    user.emailVerificationOTP = undefined;
+    user.emailVerificationOTPExpires = undefined;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Email verified successfully! You can now login.'
+    });
+  } catch (error) {
+    console.error('Verify OTP error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error verifying OTP',
       error: error.message
     });
   }
