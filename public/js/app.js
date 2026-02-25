@@ -242,18 +242,56 @@ function showDashboard() {
 }
 
 function showLogin() {
+    const authSection = document.getElementById('auth-section');
+    
+    // Check if we need to reload the original forms
+    const loginForm = document.getElementById('login-form');
+    
+    if (!loginForm) {
+        // Forms were replaced, reload the page to get original HTML
+        window.location.reload();
+        return;
+    }
+    
+    // Show/hide existing forms
     document.getElementById('login-form').style.display = 'block';
     document.getElementById('register-form').style.display = 'none';
-    document.getElementById('forgot-password-form').style.display = 'none';
+    
+    const forgotForm = document.getElementById('forgot-password-form');
+    if (forgotForm) {
+        forgotForm.style.display = 'none';
+    }
 }
 
 function showRegister() {
+    const authSection = document.getElementById('auth-section');
+    const registerForm = document.getElementById('register-form');
+    
+    if (!registerForm) {
+        // Forms were replaced, reload the page
+        window.location.reload();
+        return;
+    }
+    
     document.getElementById('login-form').style.display = 'none';
     document.getElementById('register-form').style.display = 'block';
-    document.getElementById('forgot-password-form').style.display = 'none';
+    
+    const forgotForm = document.getElementById('forgot-password-form');
+    if (forgotForm) {
+        forgotForm.style.display = 'none';
+    }
 }
 
 function showForgotPassword() {
+    const authSection = document.getElementById('auth-section');
+    const forgotForm = document.getElementById('forgot-password-form');
+    
+    if (!forgotForm) {
+        // Forms were replaced, reload the page
+        window.location.reload();
+        return;
+    }
+    
     document.getElementById('login-form').style.display = 'none';
     document.getElementById('register-form').style.display = 'none';
     document.getElementById('forgot-password-form').style.display = 'block';

@@ -118,13 +118,15 @@ async function handleLogin(event) {
                 const otpResult = await window.apiCall('/auth/send-verification-otp', 'POST', { email: emailToVerify });
                 console.log('OTP sent successfully');
                 
+                alert('✅ OTP sent to: ' + emailToVerify + '\n\nPlease check:\n• Your email inbox\n• Spam/Junk folder\n• Promotions tab (Gmail)');
+                
                 setTimeout(() => {
                     showEmailVerification(emailToVerify);
                     isLoggingIn = false;
-                }, 500);
+                }, 1000);
             } catch (otpError) {
                 console.error('OTP send error:', otpError);
-                alert('⚠️ Could not send OTP automatically. Please use the verification screen.');
+                alert('⚠️ Could not send OTP automatically.\n\nPossible reasons:\n• SendGrid not configured\n• Email service error\n\nYou can try resending OTP from the verification screen.');
                 setTimeout(() => {
                     showEmailVerification(emailToVerify);
                     isLoggingIn = false;
@@ -188,14 +190,14 @@ async function handleRegister(event) {
         
         // Check if email verification is required
         if (result.requiresVerification) {
-            alert('✅ Registration successful! An OTP has been sent to ' + email + '. Please check your email.');
-            window.showAlert('Registration successful! Please check your email for OTP.', 'success');
+            alert('✅ Registration successful!\n\nAn OTP has been sent to: ' + email + '\n\nPlease check:\n• Your email inbox\n• Spam/Junk folder\n• Promotions tab (Gmail)');
+            window.showAlert('Registration successful! Check your email for OTP (including spam folder)', 'success');
             
             // Show email verification form
             setTimeout(() => {
                 showEmailVerification(email);
                 isRegistering = false;
-            }, 1500);
+            }, 2000);
         } else {
             alert('✅ Registration successful! You can now login.');
             window.showAlert(result.message || 'Registration successful!', 'success');
@@ -525,14 +527,23 @@ async function handleEmailVerification(event) {
 
 async function resendOTP(email) {
     try {
+        // Show loading message
+        window.showAlert('Sending OTP to your email...', 'info');
+        
         const result = await window.apiCall('/auth/send-verification-otp', 'POST', { email });
         
-        alert('✅ OTP resent! Please check your email inbox.');
-        window.showAlert('OTP resent to your email', 'success');
+        alert('✅ OTP sent successfully!\n\nPlease check:\n• Your email inbox\n• Spam/Junk folder\n• Promotions tab (Gmail)\n\nEmail: ' + email);
+        window.showAlert('OTP sent! Check your email inbox and spam folder', 'success');
     } catch (error) {
         console.error('Resend OTP error:', error);
-        alert('❌ Failed to resend OTP: ' + error.message);
-        window.showAlert(error.message || 'Failed to resend OTP', 'error');
+        
+        if (error.message.includes('Failed to send')) {
+            alert('⚠️ Email service error!\n\nThe OTP could not be sent. This might be because:\n• SendGrid is not configured\n• Email service is down\n\nPlease contact the administrator or try again later.');
+            window.showAlert('Email service error - Please contact administrator', 'error');
+        } else {
+            alert('❌ Failed to resend OTP: ' + error.message);
+            window.showAlert(error.message || 'Failed to resend OTP', 'error');
+        }
     }
 }
 
