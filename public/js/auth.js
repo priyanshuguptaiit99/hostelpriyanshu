@@ -98,16 +98,25 @@ async function handleLogin(event) {
         }
     } catch (error) {
         console.error('Login error:', error); // Debug log
+        console.log('Error properties:', {
+            message: error.message,
+            requiresVerification: error.requiresVerification,
+            email: error.email,
+            statusCode: error.statusCode
+        });
         
         // Check if email verification is required
-        if (error.requiresVerification || (error.message && error.message.includes('verify your email'))) {
+        if (error.requiresVerification || error.statusCode === 403) {
             const emailToVerify = error.email || email;
-            alert('📧 Please verify your email before logging in. We will send you an OTP now.');
-            window.showAlert('Email verification required', 'warning');
+            console.log('Email verification required for:', emailToVerify);
+            
+            alert('📧 Please verify your email before logging in. Sending OTP now...');
+            window.showAlert('Email verification required - Sending OTP...', 'warning');
             
             // Automatically send OTP
             try {
                 const otpResult = await window.apiCall('/auth/send-verification-otp', 'POST', { email: emailToVerify });
+                console.log('OTP sent result:', otpResult);
                 
                 setTimeout(() => {
                     showEmailVerification(emailToVerify);
@@ -124,6 +133,7 @@ async function handleLogin(event) {
                         }, 200);
                         console.log('=================================');
                         console.log('DEVELOPMENT MODE - OTP:', otpResult.otp);
+                        console.log('Email:', emailToVerify);
                         console.log('=================================');
                     }
                     
@@ -131,6 +141,7 @@ async function handleLogin(event) {
                 }, 500);
             } catch (otpError) {
                 console.error('OTP send error:', otpError);
+                alert('⚠️ Could not send OTP automatically. Please use the verification screen.');
                 setTimeout(() => {
                     showEmailVerification(emailToVerify);
                     isLoggingIn = false;
@@ -394,21 +405,29 @@ async function handleGoogleLogin() {
                 } catch (error) {
                     hideLoading();
                     console.error('Google auth error:', error);
+                    console.log('Error properties:', {
+                        message: error.message,
+                        requiresVerification: error.requiresVerification,
+                        email: error.email,
+                        statusCode: error.statusCode
+                    });
                     
                     // Check if it's a college email error
                     if (error.message && error.message.includes('@nitj.ac.in')) {
                         alert('❌ Only NITJ College Email Allowed!\n\nPlease sign in with your college email address ending with @nitj.ac.in');
                         window.showAlert('Only NITJ college email addresses are allowed', 'error');
-                    } else if (error.requiresVerification || (error.message && error.message.includes('verify your email'))) {
+                    } else if (error.requiresVerification || error.statusCode === 403) {
                         // Email verification required - send OTP automatically
                         const userEmail = error.email || authResult?.user?.email;
+                        console.log('Email verification required for:', userEmail);
                         
                         if (userEmail) {
-                            alert('📧 Please verify your email. We will send you an OTP now.');
-                            window.showAlert('Email verification required', 'warning');
+                            alert('📧 Please verify your email. Sending OTP now...');
+                            window.showAlert('Email verification required - Sending OTP...', 'warning');
                             
                             try {
                                 const otpResult = await window.apiCall('/auth/send-verification-otp', 'POST', { email: userEmail });
+                                console.log('OTP sent result:', otpResult);
                                 
                                 setTimeout(() => {
                                     showEmailVerification(userEmail);
@@ -425,16 +444,19 @@ async function handleGoogleLogin() {
                                         }, 200);
                                         console.log('=================================');
                                         console.log('DEVELOPMENT MODE - OTP:', otpResult.otp);
+                                        console.log('Email:', userEmail);
                                         console.log('=================================');
                                     }
                                 }, 500);
                             } catch (otpError) {
                                 console.error('OTP send error:', otpError);
+                                alert('⚠️ Could not send OTP automatically. Please use the verification screen.');
                                 setTimeout(() => {
                                     showEmailVerification(userEmail);
                                 }, 500);
                             }
                         } else {
+                            alert('⚠️ Could not determine email. Please login with email/password to verify.');
                             window.showAlert('Please login with email/password to verify', 'info');
                         }
                     } else {
