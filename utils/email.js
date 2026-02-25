@@ -16,7 +16,10 @@ const sendEmail = async (options) => {
   // Prepare email message
   const message = {
     to: options.email,
-    from: process.env.SENDGRID_FROM_EMAIL,
+    from: {
+      email: process.env.SENDGRID_FROM_EMAIL,
+      name: 'Priyanshu Gupta - NITJ Hostel Management'
+    },
     subject: options.subject,
     html: options.html
   };

@@ -432,10 +432,27 @@ function showEmailVerification(email) {
     if (!authSection) return;
 
     authSection.innerHTML = `
-        <div class="auth-container" style="max-width: 500px;">
+        <div class="auth-container" style="max-width: 550px;">
             <h1>📧 Verify Your Email</h1>
             <p class="auth-subtitle">We've sent a 6-digit OTP to</p>
-            <p style="text-align: center; color: var(--primary); font-weight: 700; font-size: 16px; margin-bottom: 24px;">${email}</p>
+            <p style="text-align: center; color: var(--primary); font-weight: 700; font-size: 16px; margin-bottom: 16px;">${email}</p>
+            
+            <!-- SPAM FOLDER WARNING -->
+            <div style="background: linear-gradient(135deg, #FFA500 0%, #FF8C00 100%); color: white; padding: 16px; border-radius: var(--radius); margin-bottom: 24px; box-shadow: 0 4px 6px rgba(255, 165, 0, 0.2);">
+                <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                    <span style="font-size: 24px; margin-right: 12px;">⚠️</span>
+                    <strong style="font-size: 16px;">Check Your Spam Folder!</strong>
+                </div>
+                <p style="margin: 0; font-size: 14px; line-height: 1.6;">
+                    If you don't see the email in your inbox, please check:
+                </p>
+                <ul style="margin: 8px 0 0 20px; padding: 0; font-size: 14px; line-height: 1.8;">
+                    <li>📬 Spam / Junk folder</li>
+                    <li>📮 Promotions tab (Gmail)</li>
+                    <li>📭 Updates tab (Gmail)</li>
+                    <li>🗑️ Trash folder</li>
+                </ul>
+            </div>
             
             <form id="verify-email-form" onsubmit="return handleEmailVerification(event)">
                 <input type="hidden" id="verify-email" value="${email}">
@@ -463,13 +480,19 @@ function showEmailVerification(email) {
                     ✅ Verify Email
                 </button>
                 
-                <div style="text-align: center; padding: 16px; background: var(--light-gray); border-radius: var(--radius); margin-bottom: 16px;">
-                    <p style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 14px;">
-                        Didn't receive the OTP?
+                <!-- HELP SECTION -->
+                <div style="background: #f8f9fa; border: 2px solid #e9ecef; border-radius: var(--radius); padding: 16px; margin-bottom: 16px;">
+                    <p style="margin: 0 0 12px 0; color: #495057; font-size: 14px; font-weight: 600; text-align: center;">
+                        📧 Still didn't receive the OTP?
                     </p>
-                    <button type="button" onclick="resendOTP('${email}'); return false;" class="btn btn-secondary" style="padding: 10px 24px; font-size: 14px;">
-                        📨 Resend OTP
-                    </button>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
+                        <button type="button" onclick="resendOTP('${email}'); return false;" class="btn btn-secondary" style="padding: 10px 20px; font-size: 14px; flex: 1; min-width: 140px;">
+                            📨 Resend OTP
+                        </button>
+                        <button type="button" onclick="showSpamHelp(); return false;" class="btn" style="padding: 10px 20px; font-size: 14px; background: #6c757d; color: white; flex: 1; min-width: 140px;">
+                            ❓ Help
+                        </button>
+                    </div>
                 </div>
                 
                 <p style="text-align: center; margin-top: 16px;">
@@ -492,7 +515,34 @@ function showEmailVerification(email) {
                 this.value = this.value.replace(/[^0-9]/g, '');
             });
         }
+        
+        // Show spam folder alert after 3 seconds
+        setTimeout(() => {
+            if (document.getElementById('verify-otp')) {
+                alert('📧 Email Sent!\n\n⚠️ IMPORTANT: Check your SPAM folder if you don\'t see the email in your inbox.\n\nThe email might be in:\n• Spam/Junk folder\n• Promotions tab (Gmail)\n• Updates tab (Gmail)');
+            }
+        }, 3000);
     }, 100);
+}
+
+// Show spam folder help
+function showSpamHelp() {
+    alert('📧 How to Find Your OTP Email\n\n' +
+          '1️⃣ Check SPAM/JUNK Folder\n' +
+          '   • Open your email app\n' +
+          '   • Look for "Spam" or "Junk" folder\n' +
+          '   • Search for "NITJ Hostel"\n\n' +
+          '2️⃣ Gmail Users:\n' +
+          '   • Check "Promotions" tab\n' +
+          '   • Check "Updates" tab\n' +
+          '   • Check "Spam" folder\n\n' +
+          '3️⃣ Still Not Found?\n' +
+          '   • Click "Resend OTP" button\n' +
+          '   • Wait 1-2 minutes\n' +
+          '   • Check all folders again\n\n' +
+          '4️⃣ Mark as "Not Spam"\n' +
+          '   • If found in spam, mark it as "Not Spam"\n' +
+          '   • This helps future emails arrive in inbox');
 }
 
 async function handleEmailVerification(event) {
@@ -551,6 +601,7 @@ async function resendOTP(email) {
 window.showEmailVerification = showEmailVerification;
 window.handleEmailVerification = handleEmailVerification;
 window.resendOTP = resendOTP;
+window.showSpamHelp = showSpamHelp;
 
 
 

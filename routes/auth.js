@@ -97,24 +97,95 @@ router.post('/register', async (req, res) => {
     try {
       await sendEmail({
         email: user.email,
-        subject: 'NITJ Hostel Management - Verify Your Email',
+        subject: 'Verify Your NITJ Hostel Account - OTP Inside',
         html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px;">
-            <div style="background: white; padding: 30px; border-radius: 8px;">
-              <h2 style="color: #667eea; text-align: center; margin-bottom: 20px;">🏠 NITJ Hostel Management</h2>
-              <h3 style="color: #333; margin-bottom: 15px;">Welcome ${user.name}!</h3>
-              <p style="color: #666; font-size: 16px; line-height: 1.6;">Thank you for registering with NITJ Hostel Management System.</p>
-              <p style="color: #666; font-size: 16px; line-height: 1.6;">Please verify your college email address using the OTP below:</p>
-              <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
-                <h1 style="color: #667eea; font-size: 36px; letter-spacing: 8px; margin: 0;">${otp}</h1>
-              </div>
-              <p style="color: #666; font-size: 14px; line-height: 1.6;"><strong>This OTP is valid for 10 minutes.</strong></p>
-              <p style="color: #666; font-size: 14px; line-height: 1.6;">After verification, you can login to access the hostel management system.</p>
-              <p style="color: #666; font-size: 14px; line-height: 1.6;">If you didn't register for this account, please ignore this email.</p>
-              <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-              <p style="color: #999; font-size: 12px; text-align: center;">© 2026 NITJ Hostel Management System. All rights reserved.</p>
-            </div>
-          </div>
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f4;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 20px 0;">
+              <tr>
+                <td align="center">
+                  <table width="600" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <tr>
+                      <td style="padding: 40px 40px 30px 40px; text-align: center; background: white;">
+                        <h1 style="margin: 0; color: #667eea; font-size: 28px; font-weight: 700;">🏠 NITJ Hostel Management</h1>
+                        <p style="margin: 10px 0 0 0; color: #999; font-size: 14px;">National Institute of Technology, Jalandhar</p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 40px; background: white;">
+                        <h2 style="margin: 0 0 20px 0; color: #333; font-size: 24px; font-weight: 600;">Welcome, ${user.name}! 👋</h2>
+                        <p style="margin: 0 0 15px 0; color: #666; font-size: 16px; line-height: 1.6;">Thank you for registering with the NITJ Hostel Management System.</p>
+                        <p style="margin: 0 0 25px 0; color: #666; font-size: 16px; line-height: 1.6;">To complete your registration and verify your college email address, please use the One-Time Password (OTP) below:</p>
+                        
+                        <table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+                          <tr>
+                            <td align="center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 12px;">
+                              <p style="margin: 0 0 10px 0; color: white; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Your OTP Code</p>
+                              <h1 style="margin: 0; color: white; font-size: 48px; font-weight: 700; letter-spacing: 12px; font-family: 'Courier New', monospace;">${otp}</h1>
+                            </td>
+                          </tr>
+                        </table>
+                        
+                        <table width="100%" cellpadding="0" cellspacing="0" style="margin: 25px 0; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+                          <tr>
+                            <td style="padding: 15px;">
+                              <p style="margin: 0; color: #856404; font-size: 14px; line-height: 1.6;">
+                                <strong>⏱️ Important:</strong> This OTP is valid for <strong>10 minutes</strong> only. Please enter it on the verification page to activate your account.
+                              </p>
+                            </td>
+                          </tr>
+                        </table>
+                        
+                        <p style="margin: 25px 0 15px 0; color: #666; font-size: 14px; line-height: 1.6;">After verification, you'll be able to:</p>
+                        <ul style="margin: 0 0 25px 0; padding-left: 20px; color: #666; font-size: 14px; line-height: 1.8;">
+                          <li>Access your hostel dashboard</li>
+                          <li>View mess bills and attendance</li>
+                          <li>Submit complaints and requests</li>
+                          <li>Stay updated with announcements</li>
+                        </ul>
+                        
+                        <table width="100%" cellpadding="0" cellspacing="0" style="margin: 25px 0; background: #f8f9fa; border-radius: 8px;">
+                          <tr>
+                            <td style="padding: 15px;">
+                              <p style="margin: 0; color: #666; font-size: 13px; line-height: 1.6;">
+                                <strong>🔒 Security Note:</strong> If you didn't create an account with NITJ Hostel Management, please ignore this email. Your email address will not be used without verification.
+                              </p>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 30px 40px; background: #f8f9fa; border-top: 1px solid #e9ecef;">
+                        <p style="margin: 0 0 10px 0; color: #666; font-size: 13px; line-height: 1.6; text-align: center;">
+                          Need help? Contact us at <a href="mailto:support@nitj.ac.in" style="color: #667eea; text-decoration: none;">support@nitj.ac.in</a>
+                        </p>
+                        <p style="margin: 0; color: #999; font-size: 12px; text-align: center;">
+                          © 2026 NITJ Hostel Management System. All rights reserved.<br>
+                          Created By Priyanshu Gupta<br>
+                          National Institute of Technology, Jalandhar, Punjab, India
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                  <table width="600" cellpadding="0" cellspacing="0" style="margin-top: 20px;">
+                    <tr>
+                      <td style="text-align: center; color: #999; font-size: 11px; line-height: 1.6;">
+                        This is an automated message from NITJ Hostel Management System.<br>
+                        Please do not reply to this email.
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </body>
+          </html>
         `
       });
     } catch (emailError) {
@@ -124,7 +195,7 @@ router.post('/register', async (req, res) => {
 
     res.status(201).json({ 
       success: true, 
-      message: 'Registration successful! An OTP has been sent to your college email. Please verify to login.',
+      message: 'Registration successful! An OTP has been sent to your college email. Please verify to login. If E-Mail not received check spam folder.',
       requiresVerification: true,
       user: {
         id: user._id,
@@ -655,7 +726,7 @@ router.post('/send-verification-otp', async (req, res) => {
     try {
       await sendEmail({
         email: user.email,
-        subject: 'NITJ Hostel Management - Email Verification OTP',
+        subject: 'Verify Your NITJ Hostel Account - OTP Code',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px;">
             <div style="background: white; padding: 30px; border-radius: 8px;">
