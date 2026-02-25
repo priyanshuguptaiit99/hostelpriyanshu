@@ -112,7 +112,7 @@ router.post('/register', async (req, res) => {
                   <table width="600" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                     <tr>
                       <td style="padding: 40px 40px 30px 40px; text-align: center; background: white;">
-                        <h1 style="margin: 0; color: #667eea; font-size: 28px; font-weight: 700;">🏠 NITJ Hostel Management</h1>
+                        <h1 style="margin: 0; color: #667eea; font-size: 28px; font-weight: 700;">From Priyanshu Gupta NITJ Hostel Management</h1>
                         <p style="margin: 10px 0 0 0; color: #999; font-size: 14px;">National Institute of Technology, Jalandhar</p>
                       </td>
                     </tr>
