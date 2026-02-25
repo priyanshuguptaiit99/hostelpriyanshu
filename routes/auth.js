@@ -559,7 +559,7 @@ router.post('/google/callback', async (req, res) => {
                           <p style="color: #666; font-size: 14px; line-height: 1.6;"><strong>This OTP is valid for 10 minutes.</strong></p>
                           <p style="color: #666; font-size: 14px; line-height: 1.6;">After verification, you can access the hostel management system.</p>
                           <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-                          <p style="color: #999; font-size: 12px; text-align: center;">© 2026 NITJ Hostel Management System. All rights reserved.</p>
+                          <p style="color: #999; font-size: 12px; text-align: center;">© 2026 NITJ Hostel Management System. All rights reserved By Priyanshu.</p>
                         </div>
                       </div>
                     `
