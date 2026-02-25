@@ -117,18 +117,12 @@ router.post('/register', async (req, res) => {
     } catch (emailError) {
       console.error('Email sending error:', emailError);
       // Don't fail registration if email fails, user can request OTP again
-      console.log('=================================');
-      console.log('OTP (Email service unavailable):', otp);
-      console.log('Email:', user.email);
-      console.log('User:', user.name);
-      console.log('=================================');
     }
 
     res.status(201).json({ 
       success: true, 
       message: 'Registration successful! An OTP has been sent to your college email. Please verify to login.',
       requiresVerification: true,
-      otp: otp, // Always show OTP for now (until email is configured)
       user: {
         id: user._id,
         name: user.name,
@@ -486,18 +480,12 @@ router.post('/google/callback', async (req, res) => {
                 });
             } catch (emailError) {
                 console.error('Email sending error:', emailError);
-                console.log('=================================');
-                console.log('OTP (Email service unavailable):', otp);
-                console.log('Email:', user.email);
-                console.log('User:', user.name);
-                console.log('=================================');
             }
 
             return res.json({
                 success: true,
                 message: 'Account created! Please verify your email with the OTP sent to your college email.',
                 requiresVerification: true,
-                otp: otp, // Always show OTP for now (until email is configured)
                 user: {
                     _id: user._id,
                     name: user.name,
@@ -675,23 +663,14 @@ router.post('/send-verification-otp', async (req, res) => {
 
       res.json({
         success: true,
-        message: 'OTP sent to your college email. Please check your inbox.',
-        otp: otp // Always show OTP for now (until email is configured)
+        message: 'OTP sent to your college email. Please check your inbox.'
       });
     } catch (emailError) {
       console.error('Email sending error:', emailError);
       
-      // Always allow verification by showing OTP when email fails
-      console.log('=================================');
-      console.log('OTP (Email service unavailable):', otp);
-      console.log('Email:', user.email);
-      console.log('User:', user.name);
-      console.log('=================================');
-      
-      res.json({
-        success: true,
-        message: 'OTP generated successfully. Check console/screen for OTP.',
-        otp: otp // Always show OTP when email fails
+      res.status(500).json({
+        success: false,
+        message: 'Failed to send OTP email. Please try again later.'
       });
     }
   } catch (error) {

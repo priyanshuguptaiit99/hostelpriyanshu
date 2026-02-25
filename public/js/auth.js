@@ -110,33 +110,16 @@ async function handleLogin(event) {
             const emailToVerify = error.email || email;
             console.log('Email verification required for:', emailToVerify);
             
-            alert('📧 Please verify your email before logging in. Sending OTP now...');
+            alert('📧 Please verify your email before logging in. Sending OTP to your email...');
             window.showAlert('Email verification required - Sending OTP...', 'warning');
             
             // Automatically send OTP
             try {
                 const otpResult = await window.apiCall('/auth/send-verification-otp', 'POST', { email: emailToVerify });
-                console.log('OTP sent result:', otpResult);
+                console.log('OTP sent successfully');
                 
                 setTimeout(() => {
                     showEmailVerification(emailToVerify);
-                    
-                    // Show OTP in development mode
-                    if (otpResult.otp) {
-                        setTimeout(() => {
-                            const otpDisplay = document.getElementById('otp-display');
-                            const devOtp = document.getElementById('dev-otp');
-                            if (otpDisplay && devOtp) {
-                                devOtp.textContent = otpResult.otp;
-                                otpDisplay.style.display = 'block';
-                            }
-                        }, 200);
-                        console.log('=================================');
-                        console.log('DEVELOPMENT MODE - OTP:', otpResult.otp);
-                        console.log('Email:', emailToVerify);
-                        console.log('=================================');
-                    }
-                    
                     isLoggingIn = false;
                 }, 500);
             } catch (otpError) {
@@ -205,28 +188,12 @@ async function handleRegister(event) {
         
         // Check if email verification is required
         if (result.requiresVerification) {
-            alert('✅ Registration successful! An OTP has been sent to ' + email + '. Please verify your email to login.');
+            alert('✅ Registration successful! An OTP has been sent to ' + email + '. Please check your email.');
             window.showAlert('Registration successful! Please check your email for OTP.', 'success');
             
             // Show email verification form
             setTimeout(() => {
                 showEmailVerification(email);
-                
-                // Show OTP in development mode
-                if (result.otp) {
-                    setTimeout(() => {
-                        const otpDisplay = document.getElementById('otp-display');
-                        const devOtp = document.getElementById('dev-otp');
-                        if (otpDisplay && devOtp) {
-                            devOtp.textContent = result.otp;
-                            otpDisplay.style.display = 'block';
-                        }
-                    }, 200);
-                    console.log('=================================');
-                    console.log('DEVELOPMENT MODE - OTP:', result.otp);
-                    console.log('=================================');
-                }
-                
                 isRegistering = false;
             }, 1500);
         } else {
@@ -366,21 +333,6 @@ async function handleGoogleLogin() {
                         window.showAlert('Please verify your email with the OTP sent to your college email', 'warning');
                         setTimeout(() => {
                             showEmailVerification(authResult.user.email);
-                            
-                            // Show OTP in development mode
-                            if (authResult.otp) {
-                                setTimeout(() => {
-                                    const otpDisplay = document.getElementById('otp-display');
-                                    const devOtp = document.getElementById('dev-otp');
-                                    if (otpDisplay && devOtp) {
-                                        devOtp.textContent = authResult.otp;
-                                        otpDisplay.style.display = 'block';
-                                    }
-                                }, 200);
-                                console.log('=================================');
-                                console.log('DEVELOPMENT MODE - OTP:', authResult.otp);
-                                console.log('=================================');
-                            }
                         }, 500);
                         return;
                     }
@@ -422,31 +374,15 @@ async function handleGoogleLogin() {
                         console.log('Email verification required for:', userEmail);
                         
                         if (userEmail) {
-                            alert('📧 Please verify your email. Sending OTP now...');
+                            alert('📧 Please verify your email. Sending OTP to your email...');
                             window.showAlert('Email verification required - Sending OTP...', 'warning');
                             
                             try {
                                 const otpResult = await window.apiCall('/auth/send-verification-otp', 'POST', { email: userEmail });
-                                console.log('OTP sent result:', otpResult);
+                                console.log('OTP sent successfully');
                                 
                                 setTimeout(() => {
                                     showEmailVerification(userEmail);
-                                    
-                                    // Show OTP in development mode
-                                    if (otpResult.otp) {
-                                        setTimeout(() => {
-                                            const otpDisplay = document.getElementById('otp-display');
-                                            const devOtp = document.getElementById('dev-otp');
-                                            if (otpDisplay && devOtp) {
-                                                devOtp.textContent = otpResult.otp;
-                                                otpDisplay.style.display = 'block';
-                                            }
-                                        }, 200);
-                                        console.log('=================================');
-                                        console.log('DEVELOPMENT MODE - OTP:', otpResult.otp);
-                                        console.log('Email:', userEmail);
-                                        console.log('=================================');
-                                    }
                                 }, 500);
                             } catch (otpError) {
                                 console.error('OTP send error:', otpError);
@@ -540,11 +476,6 @@ function showEmailVerification(email) {
                     </a>
                 </p>
             </form>
-            
-            <div id="otp-display" style="display: none; margin-top: 20px; padding: 16px; background: #fff3cd; border: 2px solid #ffc107; border-radius: var(--radius); text-align: center;">
-                <p style="margin: 0 0 8px 0; color: #856404; font-weight: 600;">🔧 Development Mode</p>
-                <p style="margin: 0; color: #856404; font-size: 14px;">Your OTP: <strong id="dev-otp" style="font-size: 24px; letter-spacing: 4px;"></strong></p>
-            </div>
         </div>
     `;
     
@@ -596,21 +527,8 @@ async function resendOTP(email) {
     try {
         const result = await window.apiCall('/auth/send-verification-otp', 'POST', { email });
         
-        alert('✅ OTP resent! Please check your email.');
+        alert('✅ OTP resent! Please check your email inbox.');
         window.showAlert('OTP resent to your email', 'success');
-        
-        // Show OTP in development mode
-        if (result.otp) {
-            const otpDisplay = document.getElementById('otp-display');
-            const devOtp = document.getElementById('dev-otp');
-            if (otpDisplay && devOtp) {
-                devOtp.textContent = result.otp;
-                otpDisplay.style.display = 'block';
-            }
-            console.log('=================================');
-            console.log('DEVELOPMENT MODE - OTP:', result.otp);
-            console.log('=================================');
-        }
     } catch (error) {
         console.error('Resend OTP error:', error);
         alert('❌ Failed to resend OTP: ' + error.message);
