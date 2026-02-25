@@ -549,7 +549,7 @@ router.post('/google/callback', async (req, res) => {
                     html: `
                       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px;">
                         <div style="background: white; padding: 30px; border-radius: 8px;">
-                          <h2 style="color: #667eea; text-align: center; margin-bottom: 20px;">🏠 NITJ Hostel Management</h2>
+                          <h2 style="color: #667eea; text-align: center; margin-bottom: 20px;">From Priyanshu Gupta NITJ Hostel Management</h2>
                           <h3 style="color: #333; margin-bottom: 15px;">Welcome ${user.name}!</h3>
                           <p style="color: #666; font-size: 16px; line-height: 1.6;">Thank you for signing up with Google.</p>
                           <p style="color: #666; font-size: 16px; line-height: 1.6;">Please verify your college email address using the OTP below:</p>
