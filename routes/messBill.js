@@ -362,6 +362,46 @@ router.put('/:id', protect, authorize('warden'), async (req, res) => {
   }
 });
 
+// @route   PUT /api/mess-bill/:id/pay
+// @desc    Mark bill as paid (Warden only)
+// @access  Private (Warden)
+router.put('/:id/pay', protect, authorize('warden'), async (req, res) => {
+  try {
+    const { paymentStatus, paidAmount } = req.body;
+
+    const bill = await MessBill.findById(req.params.id);
+    
+    if (!bill) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Bill not found' 
+      });
+    }
+
+    // Update payment status
+    bill.paymentStatus = paymentStatus || 'paid';
+    bill.paidAmount = paidAmount !== undefined ? paidAmount : bill.totalAmount;
+    
+    if (bill.paymentStatus === 'paid') {
+      bill.paidDate = new Date();
+    }
+
+    await bill.save();
+
+    res.json({
+      success: true,
+      message: 'Bill payment status updated successfully',
+      bill
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error updating payment status',
+      error: error.message 
+    });
+  }
+});
+
 // @route   PUT /api/mess-bill/:id/recalculate
 // @desc    Recalculate bill based on current attendance (Warden only)
 // @access  Private (Warden)
