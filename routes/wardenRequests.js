@@ -106,6 +106,34 @@ router.get('/my-request', protect, async (req, res) => {
     }
 });
 
+// @route   GET /api/warden-requests/:id
+// @desc    Get specific warden request (Admin only)
+// @access  Private (Admin)
+router.get('/:id', protect, authorize('admin'), async (req, res) => {
+    try {
+        const request = await WardenRequest.findById(req.params.id)
+            .populate('userId', 'name email collegeId department phoneNumber roomNumber')
+            .populate('reviewedBy', 'name');
+
+        if (!request) {
+            return res.status(404).json({
+                success: false,
+                message: 'Request not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            request
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
 // @route   PUT /api/warden-requests/:id/approve
 // @desc    Approve warden request (Admin only)
 // @access  Private (Admin)
